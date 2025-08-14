@@ -20,16 +20,18 @@
 
 #include "./src/VMSelectionOverlay.h"
 
+// Global variables to store current state
+QString g_currentVM;    // Currently selected VM
+QString g_currentText;  // Text to send to VM
+
 // Get VM list
 QStringList getVMList() {
   QStringList vmList;
   QProcess process;
   process.start("virsh", {"--connect", "qemu:///system", "list", "--all"});
   process.waitForFinished();
-
   QString output = process.readAllStandardOutput();
   QStringList lines = output.split('\n');
-
   for (int i = 2; i < lines.size(); ++i) {
     QString line = lines[i].trimmed();
     if (!line.isEmpty()) {
@@ -96,6 +98,39 @@ bool isModifier(const QString& key) {
   return key == "KEY_LEFTSHIFT" || key == "KEY_LEFTCTRL" || key == "KEY_LEFTALT";
 }
 
+// Send keys to VM
+void sendKeysToVM(const QString& vmName, const QString& text, QLineEdit* inputBox) {
+  if (vmName.isEmpty() || text.isEmpty()) {
+    flashLineEdit(inputBox, QColor("#b20203"));
+    return;
+  }
+
+  QList<QStringList> sequences = textToKeySequences(text);
+  QThread* thread = QThread::create([sequences, vmName, inputBox]() {
+    bool success = true;
+    for (const QStringList& seq : sequences) {
+      QStringList command;
+      command << "--connect" << "qemu:///system" << "send-key" << vmName << "--codeset" << "linux"
+              << seq;
+
+      QProcess process;
+      process.start("virsh", command);
+      process.waitForFinished();
+      QThread::msleep(20);  // small delay to preserve order
+
+      QByteArray err = process.readAllStandardError();
+      if (!err.isEmpty()) {
+        qDebug() << "[virsh stderr]:" << err;
+        success = false;
+      }
+    }
+    QMetaObject::invokeMethod(inputBox, [inputBox, success]() {
+      flashLineEdit(inputBox, success ? QColor("#00763a") : QColor("#b20203"));
+    });
+  });
+  thread->start();
+}
+
 int main(int argc, char* argv[]) {
   QApplication app(argc, argv);
 
@@ -144,113 +179,47 @@ int main(int argc, char* argv[]) {
   QPushButton* sendButton = new QPushButton("Send Keystrokes");
   mainLayout->addWidget(sendButton);
 
-  QObject::connect(sendButton, &QPushButton::clicked, [&]() {
-    QAbstractButton* selectedBtn = vmGroup->checkedButton();
-    if (!selectedBtn) {
-      flashLineEdit(inputBox, QColor("#b20203"));
-      return;
-    }
+  // Update global state when user selects VM
+  QObject::connect(
+      vmGroup, static_cast<void (QButtonGroup::*)(QAbstractButton*)>(&QButtonGroup::buttonClicked),
+      [&](QAbstractButton* btn) { g_currentVM = btn->text(); });
 
-    QString vmName = selectedBtn->text();
-    QString text = inputBox->text();
-    if (text.isEmpty()) {
-      flashLineEdit(inputBox, QColor("#b20203"));
-      return;
-    }
+  // Update global state when input text changes
+  QObject::connect(inputBox, &QLineEdit::textChanged,
+                   [&](const QString& text) { g_currentText = text; });
 
-    QList<QStringList> sequences = textToKeySequences(text);
+  // Send button uses global state
+  QObject::connect(sendButton, &QPushButton::clicked,
+                   [&]() { sendKeysToVM(g_currentVM, g_currentText, inputBox); });
 
-    QThread* thread = QThread::create([sequences, vmName, inputBox]() {
-      bool success = true;
-      QStringList batch;
-
-      for (const QStringList& seq : sequences) {
-        if (seq.size() == 2 && isModifier(seq[0])) {
-          // send shift+key as single batch
-          QStringList command;
-          command << "--connect" << "qemu:///system" << "send-key" << vmName << "--codeset"
-                  << "linux" << seq;
-          QProcess process;
-          process.start("virsh", command);
-          process.waitForFinished();
-          QByteArray err = process.readAllStandardError();
-          if (!err.isEmpty()) {
-            qDebug() << "[virsh stderr]:" << err;
-            success = false;
-          }
-        } else {
-          // group normal keys into batch
-          batch << seq;
-          if (batch.size() >= 10) {
-            QStringList command;
-            command << "--connect" << "qemu:///system" << "send-key" << vmName << "--codeset"
-                    << "linux" << batch;
-            QProcess process;
-            process.start("virsh", command);
-            process.waitForFinished();
-            QByteArray err = process.readAllStandardError();
-            if (!err.isEmpty()) {
-              qDebug() << "[virsh stderr]:" << err;
-              success = false;
-            }
-            batch.clear();
-          }
-        }
-      }
-
-      // send remaining batch
-      if (!batch.isEmpty()) {
-        QStringList command;
-        command << "--connect" << "qemu:///system" << "send-key" << vmName << "--codeset" << "linux"
-                << batch;
-        QProcess process;
-        process.start("virsh", command);
-        process.waitForFinished();
-        QByteArray err = process.readAllStandardError();
-        if (!err.isEmpty()) {
-          qDebug() << "[virsh stderr]:" << err;
-          success = false;
-        }
-      }
-
-      QMetaObject::invokeMethod(inputBox, [inputBox, success]() {
-        flashLineEdit(inputBox, success ? QColor("#00763a") : QColor("#b20203"));
-      });
-    });
-
-    thread->start();
-  });
-
+  // Paste hotkey works even if window hidden
   QHotkey* pasteHotkey = new QHotkey(QKeySequence("Ctrl+Shift+p"), true, &window);
   QObject::connect(pasteHotkey, &QHotkey::activated, [&]() {
-    QString clipboardText = QApplication::clipboard()->text();
-    inputBox->setText(clipboardText);
-    sendButton->click();
+    g_currentText = QApplication::clipboard()->text();
+    inputBox->setText(g_currentText);  // optional
+    sendKeysToVM(g_currentVM, g_currentText, inputBox);
   });
 
+  // Overlay hotkey
   QHotkey* overlayHotkey = new QHotkey(QKeySequence("Ctrl+Shift+O"), true, &window);
   QObject::connect(overlayHotkey, &QHotkey::activated, [&]() {
-    // Create overlay with the VM list
     VMSelectionOverlay* overlay = new VMSelectionOverlay(getVMList(), &window);
-
-    // Make overlay fill the screen
     QRect screenGeometry = QGuiApplication::primaryScreen()->geometry();
     overlay->setGeometry(screenGeometry);
 
-    // Connect VM selection signal
     QObject::connect(overlay, &VMSelectionOverlay::vmSelected, [&](QString vm) {
       for (auto btn : vmGroup->buttons()) {
         if (btn->text() == vm) {
           btn->setChecked(true);
+          g_currentVM = vm;  // update global
           break;
         }
       }
     });
-
-    // Show the overlay fullscreen
     overlay->showFullScreen();
   });
 
+  // Toggle window hotkey
   QHotkey* toggleWindowHotkey = new QHotkey(QKeySequence("Ctrl+Shift+H"), true, &window);
   QObject::connect(toggleWindowHotkey, &QHotkey::activated, [&]() {
     if (window.isVisible()) {

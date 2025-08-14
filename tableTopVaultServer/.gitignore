@@ -1,8 +1,8 @@
-.vscode
-/build
-/lib
-/secrets
-/certs
+/node_modules/
+/build/
+/secrets/
+/certs/
+/lib/
 /nginx-1.29.0/*
 !/nginx-1.29.0/sbin/
 !/nginx-1.29.0/sbin/**

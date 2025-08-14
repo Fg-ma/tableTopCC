@@ -19,11 +19,12 @@ class VMSelectionOverlay : public QWidget {
   void vmSelected(QString vmName);
 
  protected:
-  void paintEvent(QPaintEvent* event) override;  // Added for dark background
+  void paintEvent(QPaintEvent* event) override;
   void mousePressEvent(QMouseEvent* event) override;
 
  private:
   QStringList vmList;
+  QWidget* containerWidget = nullptr;
 };
 
 #endif  // VMSELECTIONOVERLAY_H

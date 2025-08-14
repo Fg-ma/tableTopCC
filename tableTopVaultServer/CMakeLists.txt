@@ -13,16 +13,10 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(SODIUM REQUIRED libsodium)
 include_directories(${SODIUM_INCLUDE_DIRS})
 link_directories(${SODIUM_LIBRARY_DIRS})
+find_package(yaml-cpp REQUIRED)
 
 
 include(FetchContent)
-
-FetchContent_Declare(
-  yaml_cpp
-  GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-  GIT_TAG master
-)
-FetchContent_MakeAvailable(yaml_cpp)
 
 find_package(nlohmann_json QUIET)
 if(NOT nlohmann_json_FOUND)
@@ -81,7 +75,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 # Link libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    ${CMAKE_SOURCE_DIR}/lib/uWebSockets/uSockets/libuSockets.a
     ${CMAKE_SOURCE_DIR}/lib/uWebSockets/uSockets/uSockets.a
     OpenSSL::SSL
     OpenSSL::Crypto
