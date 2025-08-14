@@ -139,8 +139,8 @@ int main(int argc, char** argv) {
                                           ROOT_DIR + "/nginx/nginx.conf");
 
     system(
-        "/home/fg/Desktop/tableTopVaultServer/nginx-1.29.0/sbin/nginx -c "
-        "/home/fg/Desktop/tableTopVaultServer/nginx/nginx.conf");
+        "/home/n1/Desktop/tableTopCC/tableTopVaultServer/nginx-1.29.1/sbin/nginx -c "
+        "/home/n1/Desktop/tableTopCC/tableTopVaultServer/nginx/nginx.conf");
 
     Schema::instance().initSchemas();
 

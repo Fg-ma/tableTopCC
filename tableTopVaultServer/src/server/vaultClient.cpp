@@ -150,7 +150,7 @@ void VaultClient::fetchVaultSecrets(const std::string& tmpfsDir) {
       "table-top-vault-server.crt",       "table-top-vault-server-nginx.key"};
 
   for (const auto& secret : secrets) {
-    std::string vaultPath = "secret/data/vaultServer/" + secret;
+    std::string vaultPath = "kv/data/vaultServer/" + secret;
     std::string vaultContent = fetchSecret(vaultPath, "content");
 
     std::string filePath = tmpfsDir + "/" + secret;
@@ -174,7 +174,7 @@ void VaultClient::fetchVaultSecrets(const std::string& tmpfsDir) {
   }
 
   VaultClient::nginxInternalToken =
-      SecureString(fetchSecret("secret/data/vaultServer/nginx-internal-token", "value"));
+      SecureString(fetchSecret("kv/data/vaultServer/nginx-internal-token", "content"));
 
   std::string filePath = tmpfsDir + "/nginx-internal-token";
   std::ofstream out(filePath, std::ios::out | std::ios::trunc);

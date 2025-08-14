@@ -118,7 +118,7 @@ http {
             proxy_ssl_trusted_certificate {{ CA }};
             
             proxy_ssl_server_name on;
-            proxy_ssl_name n1.public;
+            proxy_ssl_name n1.admin;
 
             proxy_ssl_session_reuse off;
 
@@ -154,7 +154,7 @@ http {
             proxy_ssl_trusted_certificate {{ CA }};
 
             proxy_ssl_server_name on;
-            proxy_ssl_name n1.public;
+            proxy_ssl_name n1.admin;
 
             proxy_ssl_session_reuse off;
 
