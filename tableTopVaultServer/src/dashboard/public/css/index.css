@@ -1,0 +1,292 @@
+body {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+/* Global resets */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: "K2D", sans-serif;
+}
+
+.home-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background-color: var(--tone-black-1);
+  color: var(--fg-off-white);
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Main container */
+.main-container {
+  flex: 1;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.requests-card {
+  width: 90%;
+  height: 90%;
+}
+
+/* Card component */
+.card {
+  background: var(--tone-black-4);
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  padding: 1.5rem;
+  border: 1px solid var(--tone-black-7);
+}
+
+.requests-card h2 {
+  font-family: "Josefin Sans", sans-serif;
+  color: var(--fg-off-white);
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  cursor: default;
+}
+
+/* Button styles */
+.btn {
+  font-family: "K2D", sans-serif;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  background: transparent;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.primary-btn {
+  background: var(--fg-red);
+  color: var(--fg-white);
+  border: 2px solid var(--fg-red-light);
+}
+.primary-btn:hover {
+  background: var(--fg-red-dark);
+  border-color: var(--fg-red);
+  transform: translateY(-2px);
+}
+
+/* Requests list */
+.requests-list {
+  list-style: none;
+  display: grid;
+  gap: 1rem;
+}
+
+/* Request card inside list */
+.request-card {
+  background-color: var(--tone-black-4);
+  border-radius: 1rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.request-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.7);
+}
+.request-id {
+  font-family: "Josefin Sans", sans-serif;
+  color: var(--fg-red-light);
+  font-weight: bold;
+  margin-bottom: 0.75rem;
+  cursor: default;
+}
+.request-body {
+  font-family: "K2D", sans-serif;
+  background: var(--tone-black-5);
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  cursor: text;
+}
+
+/* Action buttons row */
+.btn-group {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* Accept and Decline buttons */
+.accept-btn {
+  font-family: "K2D", sans-serif;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 0.5rem;
+  background: var(--fg-red-light);
+  color: var(--fg-white);
+  border: 2px solid var(--fg-red);
+}
+.accept-btn:hover {
+  background: var(--fg-red);
+  border-color: var(--fg-red-dark);
+  transform: translateY(-1px);
+}
+.decline-btn {
+  font-family: "K2D", sans-serif;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 0.5rem;
+  background: var(--tone-black-6);
+  color: var(--fg-white);
+  border: 2px solid var(--tone-black-7);
+}
+.decline-btn:hover {
+  background: var(--tone-black-5);
+  border-color: var(--tone-black-6);
+  transform: translateY(-1px);
+}
+
+/* --- Sidebar Styles --- */
+.sidebar {
+  width: 240px;
+  background-color: var(--fg-white);
+  color: var(--fg-tone-black-1);
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  transition: width 0.3s ease;
+  height: 100vh;
+  position: relative;
+  padding: 1rem;
+}
+
+.sidebar.collapsed {
+  width: 60px;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.sidebar-toggle {
+  background: transparent;
+  color: var(--fg-tone-black-1);
+  border: none;
+  cursor: pointer;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.sidebar-nav {
+  flex: 1;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+}
+
+.sidebar-nav ul li {
+  margin: 1rem 0;
+}
+
+.sidebar-nav ul li a {
+  color: var(--fg-tone-black-1);
+  text-decoration: none;
+  font-size: 1.25rem;
+  transition: opacity 0.2s ease;
+}
+.sidebar-nav ul li a:hover {
+  opacity: 0.8;
+}
+
+.logout-btn {
+  background-color: var(--fg-red);
+  border: none;
+  padding: 0.6rem 1rem;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: "K2D", sans-serif;
+  font-size: 1rem;
+  transition: background 0.2s ease;
+}
+.logout-btn:hover {
+  background-color: var(--fg-red-dark);
+}
+
+.logo {
+  height: 2.5rem;
+  width: 2.5rem;
+}
+
+.logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.sidebar-title {
+  margin-top: 0.25rem;
+  font-family: "Josefin Sans", sans-serif;
+}
+
+.sidebar.collapsed .sidebar-title,
+.sidebar.collapsed .sidebar-nav,
+.sidebar.collapsed .logout-btn,
+.sidebar.collapsed .sidebar-toggle {
+  display: none;
+}
+
+.sidebar.collapsed {
+  padding: 0.5rem;
+  align-items: center;
+}
+
+.sidebar-toggle-tab {
+  display: none;
+  position: absolute;
+  left: 100%;
+  top: 1rem;
+  width: 2rem;
+  height: 2.5rem;
+  background-color: var(--fg-white);
+  color: var(--fg-tone-black-1);
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  border-top-right-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+}
+
+.sidebar.collapsed .sidebar-toggle-tab {
+  display: block;
+}
+
+.sidebar-toggle img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.sidebar-toggle-tab img {
+  width: 1.5rem;
+  height: 1.5rem;
+  object-fit: contain;
+  display: block;
+}

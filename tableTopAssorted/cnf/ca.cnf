@@ -1,0 +1,18 @@
+[ req ]
+default_bits       = 4096
+distinguished_name = dn
+x509_extensions    = v3_ca
+prompt             = no
+
+[ dn ]
+C  = US
+ST = FL
+L  = CNTL
+O  = tableTopCA
+CN = TableTop Root CA
+
+[ v3_ca ]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical, CA:true
+keyUsage = critical, digitalSignature, cRLSign, keyCertSign

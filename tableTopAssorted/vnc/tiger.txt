@@ -1,0 +1,18 @@
+
+# Config
+nano ~/.vnc/xstartup
+chmod +x ~/.vnc/xstartup
+
+#!/bin/sh
+unset SESSION_MANAGER
+unset DBUS_SESSION_BUS_ADDRESS
+
+# Load Xresources if present
+[ -f "$HOME/.Xresources" ] && xrdb "$HOME/.Xresources"
+
+# Start GNOME on Xorg
+exec gnome-session
+
+
+# Start up command
+vncserver :8 -localhost yes -xstartup ~/.vnc/xstartup

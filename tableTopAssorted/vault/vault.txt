@@ -1,0 +1,13 @@
+# bashrc
+nano ~/.bashrc
+export VAULT_ADDR="https://10.5.0.100:8200"
+export VAULT_CACERT="/home/n1/Desktop/tableTopSecrets/ca.pem"
+
+# Unseal vault
+vault operator unseal
+
+# Generate 128 character password
+openssl rand -base64 96 | tr -d '\n' | cut -c1-128
+
+# Upload secret to kv2
+vault kv put secret/myapp secret='secret'

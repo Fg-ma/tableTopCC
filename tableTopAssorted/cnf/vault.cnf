@@ -1,0 +1,22 @@
+[ req ]
+default_bits       = 4096
+distinguished_name = DN
+req_extensions     = req_ext
+prompt             = no
+
+[ DN ]
+C  = US
+ST = FL       
+L  = CNTL
+O  = TableTop
+OU = vault
+CN = 10.5.0.100
+
+[ req_ext ]
+subjectAltName = @alt_names
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
+
+[ alt_names ]
+IP.1 = 10.5.0.100
+DNS.1 = n1.admin
