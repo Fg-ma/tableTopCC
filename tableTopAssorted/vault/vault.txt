@@ -15,6 +15,9 @@ vault kv put kv/myapp secret='secret'
 # Create policy
 vault policy write policy policy.hcl
 
+# Create policy token
+vault token create -policy="policy" -ttl="24h"
+
 // Remake certs
 sudo openssl req -new -nodes \
   -out .csr \
@@ -26,7 +29,7 @@ sudo openssl x509 -req \
   -in .csr \
   -CA /home/n1/Desktop/tableTopSecrets/ca.pem -CAkey /home/n1/Desktop/tableTopSecrets/ca.key -CAcreateserial \
   -out .crt \
-  -extensions v3_req -extfile .cnf \
+  -extensions req_ext -extfile .cnf \
   -days 365
   
 # 3. Concatenate key+cert into the single file MongoDB expects
@@ -39,18 +42,7 @@ vault kv put kv/vaultServer/table-top-vault-server.crt content="$(< ./table-top-
 vault kv put kv/vaultServer/table-top-vault-server.cnf content="$(< ./table-top-vault-server.cnf)"
 vault kv put kv/vaultServer/table-top-vault-server.key content="$(< ./table-top-vault-server.key)"
 vault kv put kv/vaultServer/table-top-vault-server.csr content="$(< ./table-top-vault-server.csr)"
-vault kv put kv/vaultServer/table-top-vault-server-dhparam.pem content="$(< ./table-top-vault-server-dhparam.pem)"
 vault kv put kv/vaultServer/table-top-vault-server-nginx.crt content="$(< ./table-top-vault-server-nginx.crt)"
 vault kv put kv/vaultServer/table-top-vault-server-nginx.cnf content="$(< ./table-top-vault-server-nginx.cnf)"
 vault kv put kv/vaultServer/table-top-vault-server-nginx.key content="$(< ./table-top-vault-server-nginx.key)"
 vault kv put kv/vaultServer/table-top-vault-server-nginx.csr content="$(< ./table-top-vault-server-nginx.csr)"
-vault kv put kv/vaultServer/table-top-vault-server-dhparam-nginx.pem content="$(< ./table-top-vault-server-dhparam-nginx.pem)"
-
-sudo rm -rf ./table-top-vault-server.crt
-sudo rm -rf ./table-top-vault-server.cnf
-sudo rm -rf ./table-top-vault-server.key
-sudo rm -rf ./table-top-vault-server.csr
-sudo rm -rf ./table-top-vault-server-nginx.crt
-sudo rm -rf ./table-top-vault-server-nginx.cnf
-sudo rm -rf ./table-top-vault-server-nginx.key
-sudo rm -rf ./table-top-vault-server-nginx.csr

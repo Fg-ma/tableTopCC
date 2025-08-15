@@ -1,0 +1,7 @@
+# Make mounted drive
+lsblk -o NAME,SIZE,TYPE,MOUNTPOINT
+sudo mkfs.ext4 /dev/vd
+sudo mkdir -p /mnt/
+sudo mount /dev/vd /mnt/
+echo "UUID=$(blkid -o value -s UUID /dev/vd) /mnt/ ext4 defaults 0 0" | sudo tee -a /etc/fstab
+sudo nano /etc/fstab

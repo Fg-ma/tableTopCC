@@ -8,13 +8,40 @@ cephadm version
 sudo cephadm add-repo --release squid
 sudo cephadm install
 sudo apt install -y ceph cephadm ceph-common ceph-fuse ceph-mgr ceph-mon ceph-osd
+
+sudo nano /etc/apt/sources.list.d/ceph.list
+trixie => bookworm
+
+sudo useradd -m -s /bin/bash cephadmin
+sudo usermod -aG sudo cephadmin
+sudo bash -c 'echo "cephadmin ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/cephadmin'
+sudo chmod 440 /etc/sudoers.d/cephadmin
+sudo mkdir -p /home/cephadmin/.ssh
+sudo chown cephadmin:cephadmin /home/cephadmin/.ssh
+sudo chmod 700 /home/cephadmin/.ssh
+sudo -u cephadmin ssh-keygen -t rsa -b 4096 -N "" -f /home/cephadmin/.ssh/id_rsa
+sudo cat /home/cephadmin/.ssh/id_rsa.pub | sudo tee -a /home/cephadmin/.ssh/authorized_keys
+sudo chown cephadmin:cephadmin /home/cephadmin/.ssh/authorized_keys
+sudo chmod 600 /home/cephadmin/.ssh/authorized_keys
+
+sudo nano /etc/ssh/sshd_config
+PasswordAuthentication yes
+PermitRootLogin prohibit-password
+AllowUsers cephadmin
+
 sudo cephadm bootstrap \
   --mon-ip 10.10.0.100 \
-  --public-network 10.10.0.0/16 \
   --cluster-network 10.20.0.0/16 \
   --initial-dashboard-user admin \
   --initial-dashboard-password 'drowssap' \
 	--ssh-user cephadmin
+
+
+# Set public network
+sudo ceph config set global public_network 10.10.0.0/16
+
+# Set cluster network
+sudo ceph config set global cluster_network 10.20.0.0/16
 
 cephadm shell -- ceph orch set-ssh-user cephadmin
 
@@ -64,40 +91,31 @@ ssh-copy-id tabletopnode@10.5.0.10
 ssh-copy-id root@10.5.0.10
 ssh tabletopnode@10.5.0.10
 
-cephadm shell -- ceph cephadm get-pub-key > ~/ceph.pub
-ssh-copy-id -f -i ~/ceph.pub root@tabletopnode
-rm ~/ceph.pub
+sudo useradd -m -s /bin/bash cephadmin
+sudo usermod -aG sudo cephadmin
+sudo bash -c 'echo "cephadmin ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/cephadmin'
+sudo chmod 440 /etc/sudoers.d/cephadmin
+sudo mkdir -p /home/cephadmin/.ssh
+sudo chown cephadmin:cephadmin /home/cephadmin/.ssh
+sudo chmod 700 /home/cephadmin/.ssh
+sudo -u cephadmin ssh-keygen -t rsa -b 4096 -N "" -f /home/cephadmin/.ssh/id_rsa
+sudo cat /home/cephadmin/.ssh/id_rsa.pub | sudo tee -a /home/cephadmin/.ssh/authorized_keys
+sudo chown cephadmin:cephadmin /home/cephadmin/.ssh/authorized_keys
+sudo chmod 600 /home/cephadmin/.ssh/authorized_keys
+
+sudo nano /etc/ssh/sshd_config
+PasswordAuthentication yes
+PermitRootLogin prohibit-password
+
 
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y curl wget lsb-release gnupg chrony podman
-sudo adduser --disabled-password --gecos "" cephadmin
-echo "cephadmin ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/cephadmin
-sudo chmod 440 /etc/sudoers.d/cephadmin
+sudo apt install -y lsb-release gnupg chrony podman lvm2
 
-
-// curl --silent --remote-name --location https://download.ceph.com/rpm-19.2.2/el9/noarch/cephadm
-// chmod +x cephadm
-// sudo mv cephadm /usr/local/bin/
-// cephadm version
-// sudo cephadm add-repo --release squid
-// sudo cephadm install
+sudo cephadm shell -- ceph cephadm get-pub-key
+sudo nano /home/cephadmin/.ssh/authorized_keys
 
 
 
 
-
-
-
-***add osd
-lsblk
-sudo wipefs -a /dev/<partition>
-sudo lvs
-sudo ceph-volume lvm prepare --data /dev/<partition>
-
-
-
-
-
-
-***delete install
+# Delete install
 sudo find / -name "*ceph*" -exec rm -rf {} \; 2>/dev/null
