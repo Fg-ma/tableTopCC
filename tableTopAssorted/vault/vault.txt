@@ -9,6 +9,9 @@ vault operator unseal
 # Generate 128 character password
 openssl rand -base64 96 | tr -d '\n' | cut -c1-128
 
+# Convert password to url safe password
+printf '%s' 'p@ssword' | python3 -c "import sys,urllib.parse; pwd=sys.stdin.read().rstrip('\n'); print(urllib.parse.quote(pwd, safe=''))"
+
 # Upload secret to kv2
 vault kv put kv/myapp secret='secret'
 
