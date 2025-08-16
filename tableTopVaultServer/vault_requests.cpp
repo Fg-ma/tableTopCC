@@ -185,6 +185,7 @@ int main(int argc, char** argv) {
       }
     } catch (const std::exception& e) {
       std::cerr << "\nWebSocket read error: " << e.what() << "\n";
+      wait = false;
     }
   });
 
@@ -194,7 +195,10 @@ int main(int argc, char** argv) {
   }
 
   reader.join();
-  ws.close(websocket::close_code::normal);
+  try {
+    ws.close(websocket::close_code::normal);
+  } catch (const std::exception& e) {
+  }
 
   if (wasDeclined) {
     std::cerr << "[ERROR] Request was declined by admin.\n";

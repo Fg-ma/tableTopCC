@@ -82,7 +82,10 @@
     "variant": "cpp",
     "complex": "cpp",
     "source_location": "cpp",
-    "typeindex": "cpp"
+    "typeindex": "cpp",
+    "csignal": "cpp",
+    "coroutine": "cpp",
+    "shared_mutex": "cpp"
   },
   "C_Cpp.clang_format_fallbackStyle": "Google",
   "C_Cpp.clang_format_style": "file",
