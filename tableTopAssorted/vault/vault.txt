@@ -49,3 +49,59 @@ vault kv put kv/vaultServer/table-top-vault-server-nginx.crt content="$(< ./tabl
 vault kv put kv/vaultServer/table-top-vault-server-nginx.cnf content="$(< ./table-top-vault-server-nginx.cnf)"
 vault kv put kv/vaultServer/table-top-vault-server-nginx.key content="$(< ./table-top-vault-server-nginx.key)"
 vault kv put kv/vaultServer/table-top-vault-server-nginx.csr content="$(< ./table-top-vault-server-nginx.csr)"
+
+vault list pki/roles
+vault list auth/approle/role
+vault policy list
+
+vault delete pki/roles/mongo-config-10.60.0.101
+vault delete pki/roles/mongo-config-10.60.0.102
+vault delete pki/roles/mongo-config-10.60.0.103
+vault delete pki/roles/mongo-shard-10.50.0.101
+vault delete pki/roles/mongo-shard-10.50.0.102
+vault delete pki/roles/mongo-shard-10.50.0.103
+vault delete pki/roles/mongos-10.40.0.101
+vault delete pki/roles/mongos-10.40.0.102
+vault delete pki/roles/mongos-10.40.0.103
+vault delete pki/roles/mongos-client-10.40.0.101
+vault delete pki/roles/mongos-client-10.40.0.102
+vault delete pki/roles/mongos-client-10.40.0.103
+
+vault delete auth/approle/role/mongo-config-10.60.0.101
+vault delete auth/approle/role/mongo-config-10.60.0.102
+vault delete auth/approle/role/mongo-config-10.60.0.103
+vault delete auth/approle/role/mongo-shard-10.50.0.101
+vault delete auth/approle/role/mongo-shard-10.50.0.102
+vault delete auth/approle/role/mongo-shard-10.50.0.103
+vault delete auth/approle/role/mongos-10.40.0.101
+vault delete auth/approle/role/mongos-10.40.0.102
+vault delete auth/approle/role/mongos-10.40.0.103
+vault delete auth/approle/role/mongos-client-10.40.0.101
+vault delete auth/approle/role/mongos-client-10.40.0.102
+vault delete auth/approle/role/mongos-client-10.40.0.103
+
+vault policy delete mongo-config-10.60.0.101
+vault policy delete mongo-config-10.60.0.102
+vault policy delete mongo-config-10.60.0.103
+vault policy delete mongo-config-approle-reader-10.60.0.101
+vault policy delete mongo-config-approle-reader-10.60.0.102
+vault policy delete mongo-config-approle-reader-10.60.0.103
+vault policy delete mongo-shard-10.50.0.101
+vault policy delete mongo-shard-10.50.0.102
+vault policy delete mongo-shard-10.50.0.103
+vault policy delete mongo-shard-approle-reader-10.50.0.101
+vault policy delete mongo-shard-approle-reader-10.50.0.102
+vault policy delete mongo-shard-approle-reader-10.50.0.103
+vault policy delete mongos-10.40.0.101
+vault policy delete mongos-10.40.0.102
+vault policy delete mongos-10.40.0.103
+vault policy delete mongos-approle-reader-10.40.0.101
+vault policy delete mongos-approle-reader-10.40.0.102
+vault policy delete mongos-approle-reader-10.40.0.103
+vault policy delete mongos-client-10.40.0.101
+vault policy delete mongos-client-10.40.0.102
+vault policy delete mongos-client-10.40.0.103
+vault policy delete mongos-client-approle-reader-10.40.0.101
+vault policy delete mongos-client-approle-reader-10.40.0.102
+vault policy delete mongos-client-approle-reader-10.40.0.103
+
