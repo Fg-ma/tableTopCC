@@ -57,9 +57,15 @@ vault policy list
 vault delete pki/roles/mongo-config-10.60.0.101
 vault delete pki/roles/mongo-config-10.60.0.102
 vault delete pki/roles/mongo-config-10.60.0.103
+vault delete pki/roles/mongo-config-client-10.40.0.101
+vault delete pki/roles/mongo-config-client-10.40.0.102
+vault delete pki/roles/mongo-config-client-10.40.0.103
 vault delete pki/roles/mongo-shard-10.50.0.101
 vault delete pki/roles/mongo-shard-10.50.0.102
 vault delete pki/roles/mongo-shard-10.50.0.103
+vault delete pki/roles/mongo-shard-client-10.40.0.101
+vault delete pki/roles/mongo-shard-client-10.40.0.102
+vault delete pki/roles/mongo-shard-client-10.40.0.103
 vault delete pki/roles/mongos-10.40.0.101
 vault delete pki/roles/mongos-10.40.0.102
 vault delete pki/roles/mongos-10.40.0.103
@@ -70,9 +76,15 @@ vault delete pki/roles/mongos-client-10.40.0.103
 vault delete auth/approle/role/mongo-config-10.60.0.101
 vault delete auth/approle/role/mongo-config-10.60.0.102
 vault delete auth/approle/role/mongo-config-10.60.0.103
+vault delete auth/approle/role/mongo-config-client-10.40.0.101
+vault delete auth/approle/role/mongo-config-client-10.40.0.102
+vault delete auth/approle/role/mongo-config-client-10.40.0.103
 vault delete auth/approle/role/mongo-shard-10.50.0.101
 vault delete auth/approle/role/mongo-shard-10.50.0.102
 vault delete auth/approle/role/mongo-shard-10.50.0.103
+vault delete auth/approle/role/mongo-shard-client-10.40.0.101
+vault delete auth/approle/role/mongo-shard-client-10.40.0.102
+vault delete auth/approle/role/mongo-shard-client-10.40.0.103
 vault delete auth/approle/role/mongos-10.40.0.101
 vault delete auth/approle/role/mongos-10.40.0.102
 vault delete auth/approle/role/mongos-10.40.0.103
@@ -86,12 +98,24 @@ vault policy delete mongo-config-10.60.0.103
 vault policy delete mongo-config-approle-reader-10.60.0.101
 vault policy delete mongo-config-approle-reader-10.60.0.102
 vault policy delete mongo-config-approle-reader-10.60.0.103
+vault policy delete mongo-config-client-10.40.0.101
+vault policy delete mongo-config-client-10.40.0.102
+vault policy delete mongo-config-client-10.40.0.103
+vault policy delete mongo-config-client-approle-reader-10.40.0.101
+vault policy delete mongo-config-client-approle-reader-10.40.0.102
+vault policy delete mongo-config-client-approle-reader-10.40.0.103
 vault policy delete mongo-shard-10.50.0.101
 vault policy delete mongo-shard-10.50.0.102
 vault policy delete mongo-shard-10.50.0.103
 vault policy delete mongo-shard-approle-reader-10.50.0.101
 vault policy delete mongo-shard-approle-reader-10.50.0.102
 vault policy delete mongo-shard-approle-reader-10.50.0.103
+vault policy delete mongo-shard-client-10.40.0.101
+vault policy delete mongo-shard-client-10.40.0.102
+vault policy delete mongo-shard-client-10.40.0.103
+vault policy delete mongo-shard-client-approle-reader-10.40.0.101
+vault policy delete mongo-shard-client-approle-reader-10.40.0.102
+vault policy delete mongo-shard-client-approle-reader-10.40.0.103
 vault policy delete mongos-10.40.0.101
 vault policy delete mongos-10.40.0.102
 vault policy delete mongos-10.40.0.103

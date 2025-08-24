@@ -16,3 +16,12 @@ exec gnome-session
 
 # Start up command
 vncserver :8 -localhost yes -xstartup ~/.vnc/xstartup
+
+# Reset nftables permission
+sudo nft -a list chain inet filter input
+sudo nft delete rule inet filter input handle 36
+sudo nft add rule inet filter input ip saddr 10.136.. tcp dport 22 ct state new accept
+sudo sh -c "nft list ruleset > /etc/nftables.conf"
+sudo systemctl restart nftables
+
+
