@@ -1,0 +1,6 @@
+// Clear terminal history
+history -c
+rm ~/.bash_history
+
+// List system daemons
+systemctl list-units --type=service
