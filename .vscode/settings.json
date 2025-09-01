@@ -85,12 +85,20 @@
     "typeindex": "cpp",
     "csignal": "cpp",
     "coroutine": "cpp",
-    "shared_mutex": "cpp"
+    "shared_mutex": "cpp",
+    "*.css": "css"
   },
   "C_Cpp.clang_format_fallbackStyle": "Google",
   "C_Cpp.clang_format_style": "file",
   "editor.formatOnSave": true,
   "[cpp]": {
     "editor.defaultFormatter": "ms-vscode.cpptools"
-  }
+  },
+  "tailwindCSS.includeLanguages": {
+    "javascript": "javascript",
+    "javascriptreact": "javascriptreact",
+    "typescript": "typescript",
+    "typescriptreact": "typescriptreact"
+  },
+  "tailwindCSS.experimental.configFile": "/home/n1/Desktop/tableTopCC/tableTopVaultServer/client/tailwind.config.js"
 }

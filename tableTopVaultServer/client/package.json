@@ -1,20 +1,29 @@
 {
+  "scripts": {
+    "build": "NODE_ENV=production webpack --config webpack.config.js --mode production",
+    "dev": "webpack --config webpack.config.js --mode development --watch",
+    "clean": "rm -rf dist"
+  },
   "dependencies": {
     "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "typescript": "^5.9.2"
+    "react-dom": "^19.1.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.12",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
     "autoprefixer": "^10.4.21",
+    "clean-webpack-plugin": "^4.0.0",
     "css-loader": "^7.1.2",
     "html-webpack-plugin": "^5.6.4",
+    "mini-css-extract-plugin": "^2.9.4",
     "postcss": "^8.5.6",
     "postcss-loader": "^8.1.1",
+    "source-map-loader": "^5.0.0",
     "style-loader": "^4.0.0",
     "tailwindcss": "^4.1.12",
     "ts-loader": "^9.5.4",
+    "typescript": "^5.9.2",
     "webpack": "^5.101.3",
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.2"

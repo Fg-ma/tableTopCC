@@ -1,4 +1,4 @@
-class ServerRequests {
+export default class ServerRequests {
   constructor() {}
 
   loadRequests = async () => {
@@ -111,20 +111,3 @@ class ServerRequests {
     }
   };
 }
-
-const serverRequests = new ServerRequests();
-
-document.getElementById("sidebarToggle")?.addEventListener("click", () => {
-  document.getElementById("sidebar")?.classList.toggle("collapsed");
-});
-
-document.getElementById("sidebarToggleTab")?.addEventListener("click", () => {
-  document.getElementById("sidebar")?.classList.toggle("collapsed");
-});
-
-document.getElementById("logoutBtn")?.addEventListener("click", () => {
-  serverRequests.sendLogout();
-});
-
-window.addEventListener("load", serverRequests.loadRequests);
-setInterval(serverRequests.loadRequests, 5000);

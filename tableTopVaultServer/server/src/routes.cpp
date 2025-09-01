@@ -73,6 +73,53 @@ Routes::Routes(uWS::SSLApp& app) {
     res->end(buffer.str());
   });
 
+  app.get("/common/*", [](auto* res, auto* req) {
+    if (!ServerUtils::instance().checkInternal(req)) {
+      res->writeStatus("403 Forbidden")->end();
+      return;
+    }
+
+    if (!ServerUtils::instance().checkOrigin(req)) {
+      res->writeStatus("401 Unauthorized")->end();
+      return;
+    }
+
+    std::string rawUrl(req->getUrl());
+
+    std::string subPath = rawUrl.substr(std::string("/common/").length());
+    auto safePathOpt = Sanitize::instance().sanitizePath(ROOT_DIR + "/client/dist/common", subPath);
+    if (!safePathOpt) {
+      res->writeStatus("400 Bad Request")->end("Invalid or unsafe path");
+      return;
+    }
+    std::string safePath = *safePathOpt;
+
+    std::ifstream file(safePath, std::ios::binary);
+
+    if (!file) {
+      res->writeStatus("404 Not Found")->end("File not found");
+      return;
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+
+    if (ServerUtils::instance().endsWith(safePath, ".css")) {
+      res->writeHeader("Content-Type", "text/css");
+    } else if (ServerUtils::instance().endsWith(safePath, ".js") ||
+               ServerUtils::instance().endsWith(safePath, ".ts")) {
+      res->writeHeader("Content-Type", "application/javascript");
+    } else if (ServerUtils::instance().endsWith(safePath, ".html")) {
+      res->writeHeader("Content-Type", "text/html");
+    } else if (ServerUtils::instance().endsWith(safePath, ".json")) {
+      res->writeHeader("Content-Type", "application/json");
+    } else {
+      res->writeHeader("Content-Type", "text/plain");
+    }
+
+    res->end(buffer.str());
+  });
+
   app.get("/loginPage/*", [](auto* res, auto* req) {
     if (!ServerUtils::instance().checkInternal(req)) {
       res->writeStatus("403 Forbidden")->end();
@@ -92,7 +139,8 @@ Routes::Routes(uWS::SSLApp& app) {
     }
 
     std::string subPath = rawUrl.substr(std::string("/loginPage/").length());
-    auto safePathOpt = Sanitize::instance().sanitizePath(ROOT_DIR + "/client/loginPage", subPath);
+    auto safePathOpt =
+        Sanitize::instance().sanitizePath(ROOT_DIR + "/client/dist/loginPage", subPath);
     if (!safePathOpt) {
       res->writeStatus("400 Bad Request")->end("Invalid or unsafe path");
       return;
@@ -144,7 +192,8 @@ Routes::Routes(uWS::SSLApp& app) {
     }
 
     std::string subPath = rawUrl.substr(std::string("/dashboard/").length());
-    auto safePathOpt = Sanitize::instance().sanitizePath(ROOT_DIR + "/client/dashboard", subPath);
+    auto safePathOpt =
+        Sanitize::instance().sanitizePath(ROOT_DIR + "/client/dist/dashboard", subPath);
     if (!safePathOpt) {
       res->writeStatus("400 Bad Request")->end("Invalid or unsafe path");
       return;
