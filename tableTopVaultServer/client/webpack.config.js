@@ -9,15 +9,14 @@ const outDir = path.resolve(__dirname, "dist");
 module.exports = {
   mode: isProd ? "production" : "development",
   entry: {
-    // adjust these entry paths to match your new TSX entrypoint locations
     loginPage: path.resolve(__dirname, "loginPage", "index.tsx"),
     dashboard: path.resolve(__dirname, "dashboard", "index.tsx"),
   },
   output: {
     path: outDir,
     filename: "[name]/bundle.[contenthash].js",
-    publicPath: "/", // server routes will map /loginPage/... => dist/loginPage/...
-    clean: false, // CleanWebpackPlugin will handle it
+    publicPath: "/", 
+    clean: false,
   },
   devtool: "source-map",
   resolve: {

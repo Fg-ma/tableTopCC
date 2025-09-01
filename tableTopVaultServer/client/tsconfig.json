@@ -3,5 +3,8 @@
   "references": [
     { "path": "./tsconfig.loginpage.json" },
     { "path": "./tsconfig.dashboard.json" }
-  ]
+  ],
+  "compilerOptions": {
+    "types": ["node", "react"]
+  }
 }

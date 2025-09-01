@@ -1,5 +1,7 @@
 export default class ServerRequests {
-  constructor() {}
+  constructor(
+    private requestListRef: React.RefObject<HTMLUListElement | null>,
+  ) {}
 
   loadRequests = async () => {
     try {
@@ -16,11 +18,9 @@ export default class ServerRequests {
 
       const data = await res.json();
 
-      const list = document.getElementById("requestsList");
+      if (!this.requestListRef.current) return;
 
-      if (!list) return;
-
-      list.innerHTML = "";
+      this.requestListRef.current.innerHTML = "";
       for (const req of data) {
         const requestId = req.request_id;
         const li = document.createElement("li");
@@ -53,7 +53,7 @@ export default class ServerRequests {
         btnRow.append(acceptBtn, declineBtn);
 
         li.append(idEl, bodyEl, btnRow);
-        list.appendChild(li);
+        this.requestListRef.current.appendChild(li);
       }
     } catch (e) {
       console.error(e);

@@ -1,5 +1,5 @@
 export default {
-  content: ["./**/*.{js,jsx,ts,tsx,html}"],
+  content: ["./loginPage/**/*.{js,jsx,ts,tsx,html}","./dashboard/**/*.{js,jsx,ts,tsx,html}"],
   theme: {
     extend: {
       colors: {

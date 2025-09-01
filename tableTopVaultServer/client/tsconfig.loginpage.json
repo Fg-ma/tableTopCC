@@ -2,12 +2,17 @@
   "compilerOptions": {
     "target": "esnext",
     "lib": ["ESNext", "dom"],
-    "module": "es6",
-    "outDir": "./src/loginPage/dist",
-    "rootDir": "./src/loginPage/src",
+    "module": "esnext",
+    "moduleResolution": "Node",
+    "outDir": "./loginPage/dist",
+    "rootDir": "./loginPage/src",
     "strict": true,
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "types": ["node", "react"],
+    "jsx": "react-jsx"
   },
-  "include": ["./src/loginPage/src"]
+  "include": ["./loginPage/src"]
 }

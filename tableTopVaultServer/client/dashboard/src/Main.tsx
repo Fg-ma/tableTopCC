@@ -5,13 +5,19 @@ import ServerRequests from "./ServerRequests";
 import "./css/scrollbar.css";
 
 export default function Main() {
-  const serverRequestsRef = useRef<ServerRequests>(new ServerRequests());
+  const requestListRef = useRef<HTMLUListElement>(null);
+  const serverRequestsRef = useRef<ServerRequests>(
+    new ServerRequests(requestListRef),
+  );
 
   return (
-    <div className='flex w-full h-full'>
+    <div className="flex h-full w-full">
       <NavigationPanel serverRequestsRef={serverRequestsRef} />
 
-      <VaultRequestsPanel serverRequestsRef={serverRequestsRef} />
+      <VaultRequestsPanel
+        serverRequestsRef={serverRequestsRef}
+        requestListRef={requestListRef}
+      />
     </div>
   );
 }
