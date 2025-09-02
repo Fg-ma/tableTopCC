@@ -14,5 +14,8 @@
     "types": ["node", "react"],
     "jsx": "react-jsx"
   },
-  "include": ["./dashboard/src"]
+  "include": [
+    "./dashboard/src",
+    "dashboard/src/serverRequests/ServerRequests.ts"
+  ]
 }

@@ -1,13 +1,14 @@
 import { useRef } from "react";
 import NavigationPanel from "./navigationPanel/NavigationPanel";
 import VaultRequestsPanel from "./vaultRequestsPanel/VaultRequestsPanel";
-import ServerRequests from "./ServerRequests";
+import ServerRequests from "./serverRequests/ServerRequests";
+import { PendingRequestType } from "./serverRequests/lib/typeConstant";
 import "./css/scrollbar.css";
 
 export default function Main() {
-  const requestListRef = useRef<HTMLUListElement>(null);
+  const pendingRequests = useRef<PendingRequestType[]>([]);
   const serverRequestsRef = useRef<ServerRequests>(
-    new ServerRequests(requestListRef),
+    new ServerRequests(pendingRequests),
   );
 
   return (
@@ -16,7 +17,7 @@ export default function Main() {
 
       <VaultRequestsPanel
         serverRequestsRef={serverRequestsRef}
-        requestListRef={requestListRef}
+        pendingRequests={pendingRequests}
       />
     </div>
   );

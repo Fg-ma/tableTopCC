@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import ServerRequests from "../ServerRequests";
+import ServerRequests from "../serverRequests/ServerRequests";
 
 export default function NavigationPanel({
   serverRequestsRef,

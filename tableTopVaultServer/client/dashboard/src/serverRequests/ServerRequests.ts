@@ -1,7 +1,7 @@
+import { PendingRequestType } from "./lib/typeConstant";
+
 export default class ServerRequests {
-  constructor(
-    private requestListRef: React.RefObject<HTMLUListElement | null>,
-  ) {}
+  constructor(private pendingRequests: React.RefObject<PendingRequestType[]>) {}
 
   loadRequests = async () => {
     try {
@@ -18,43 +18,7 @@ export default class ServerRequests {
 
       const data = await res.json();
 
-      if (!this.requestListRef.current) return;
-
-      this.requestListRef.current.innerHTML = "";
-      for (const req of data) {
-        const requestId = req.request_id;
-        const li = document.createElement("li");
-        li.className = "request-card";
-
-        const idEl = document.createElement("div");
-        idEl.className = "request-id";
-        idEl.textContent = requestId;
-
-        const bodyEl = document.createElement("pre");
-        bodyEl.className = "request-body";
-        bodyEl.textContent = JSON.stringify(req, null, 2);
-
-        const btnRow = document.createElement("div");
-        btnRow.style.display = "flex";
-        btnRow.style.justifyContent = "flex-end";
-        btnRow.style.gap = "0.5rem";
-
-        const acceptBtn = document.createElement("button");
-        acceptBtn.className = "accept-btn";
-        acceptBtn.textContent = "Accept";
-        acceptBtn.addEventListener("click", () => this.sendAccept(requestId));
-
-        const declineBtn = document.createElement("button");
-        declineBtn.className = "accept-btn";
-        declineBtn.style.backgroundColor = "var(--tone-black-6)";
-        declineBtn.textContent = "Decline";
-        declineBtn.addEventListener("click", () => this.sendDecline(requestId));
-
-        btnRow.append(acceptBtn, declineBtn);
-
-        li.append(idEl, bodyEl, btnRow);
-        this.requestListRef.current.appendChild(li);
-      }
+      this.pendingRequests.current = data;
     } catch (e) {
       console.error(e);
     }
