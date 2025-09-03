@@ -103,7 +103,7 @@
     "svelte": "html",
     "postcss": "css"
   },
-  "tailwindCSS.experimental.configFile": "/home/n1/Desktop/tableTopCC/tableTopVaultServer/client/tailwind.config.js",
+  "tailwindCSS.experimental.configFile": "/home/n1/Desktop/tableTopControlCenter/central/client/tailwind.config.js",
   "css.lint.unknownAtRules": "ignore",
   "scss.lint.unknownAtRules": "ignore",
   "less.lint.unknownAtRules": "ignore",

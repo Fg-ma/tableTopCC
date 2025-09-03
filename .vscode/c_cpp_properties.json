@@ -4,7 +4,7 @@
       "name": "Linux",
       "includePath": [
         "${workspaceFolder}/**",
-        "${workspaceFolder}/tableTopVaultServer/server/**",
+        "${workspaceFolder}/central/server/**",
         "/usr/include/x86_64-linux-gnu/qt5",
         "/usr/include/x86_64-linux-gnu/qt5/QtWidgets",
         "/usr/include/x86_64-linux-gnu/qt5/QtGui",
