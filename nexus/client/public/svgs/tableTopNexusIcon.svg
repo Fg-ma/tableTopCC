@@ -1,0 +1,25 @@
+<svg
+   xmlns="http://www.w3.org/2000/svg"
+   viewBox="0 0 100 100"
+   width="1"
+   height="1"
+>
+  <circle
+    style="fill:#d40213;stroke:none"
+    transform="translate(1152.5,1152.5)"
+    cx="-1102.5"
+    cy="-1102.5"
+    r="47.497623"
+	/>
+  <path
+    d="m 10.254576,37.3 h 22.393677 v 4.341231 h -9.050778 v 29.40834 h -4.525389 v -29.40834 h -8.81751 z"
+    style="font-size:46.6667px;letter-spacing:30px;fill:#f2f2f2;stroke-width:5.83342;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5" 
+	/>
+  <path
+    d="m 67.351736,37.3 h 22.393677 v 4.341231 h -9.050778 v 29.40834 h -4.525389 v -29.40834 h -8.81751 z"
+    style="font-size:46.6667px;letter-spacing:30px;fill:#f2f2f2;stroke-width:5.83342;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5" />
+  <path
+    d="M 22.746664,16.260016 H 34.22666 L 78.186643,83.73999 H 66.613314 Z M 21.813332,83.73999 45.239989,47.060004 49.626654,55.833334 33.013327,83.73999 Z M 49.906654,43.793339 66.333315,16.260016 H 77.25331 l -22.493324,35.09332 z"
+    style="font-size:93.3333px;line-height:0;font-family:'Josefin Sans';-inkscape-font-specification:'Josefin Sans';letter-spacing:0px;fill:#f8111b;stroke-width:100"
+	/>
+</svg>

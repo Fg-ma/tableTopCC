@@ -1,4 +1,3 @@
-
 # Config
 nano ~/.vnc/xstartup
 chmod +x ~/.vnc/xstartup
