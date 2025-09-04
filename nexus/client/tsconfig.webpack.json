@@ -13,5 +13,11 @@
     "noEmit": false,
     "sourceMap": true
   },
-  "include": ["loginPage/src", "dashboard/src"]
+  "include": [
+    "loginPage/src",
+    "dashboard/src",
+    "mongo/src",
+    "vault/src",
+    "components"
+  ]
 }

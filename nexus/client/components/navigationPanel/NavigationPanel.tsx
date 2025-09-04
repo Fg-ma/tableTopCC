@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import ServerRequests from "../serverRequests/ServerRequests";
+import ServerRequests from "../../dashboard/src/serverRequests/ServerRequests";
 
 export default function NavigationPanel({
   serverRequestsRef,
@@ -59,6 +59,12 @@ export default function NavigationPanel({
         <ul>
           <li>
             <a href="/dashboard/">Dashboard</a>
+          </li>
+          <li>
+            <a href="/vault/">Vault</a>
+          </li>
+          <li>
+            <a href="/mongo/">Mongo</a>
           </li>
         </ul>
       </nav>

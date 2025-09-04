@@ -4,8 +4,8 @@
     "lib": ["ESNext", "dom"],
     "module": "esnext",
     "moduleResolution": "Node",
-    "outDir": "./loginPage/dist",
-    "rootDir": "./loginPage/src",
+    "outDir": "./mongo/dist",
+    "rootDir": "./mongo/src",
     "strict": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -14,5 +14,5 @@
     "types": ["node", "react"],
     "jsx": "react-jsx"
   },
-  "include": ["./loginPage/src", "./components"]
+  "include": ["./mongo/src", "./components"]
 }
