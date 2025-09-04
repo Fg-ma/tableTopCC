@@ -1,0 +1,28 @@
+- name: Render interfaces file
+  template:
+    src: interfaces.j2
+    dest: "/etc/network/interfaces"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+
+- name: Render hosts file
+  template:
+    src: hosts.j2
+    dest: "/etc/hosts"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+
+- name: Disable IPv4 forwarding in sysctl
+  ansible.builtin.sysctl:
+    name: net.ipv4.ip_forward
+    value: "0"
+    state: present
+    reload: yes
+
+- name: Ensure systemd-networkd is enabled, started, and restarted
+  ansible.builtin.systemd:
+    name: systemd-networkd
+    enabled: yes
+    state: restarted

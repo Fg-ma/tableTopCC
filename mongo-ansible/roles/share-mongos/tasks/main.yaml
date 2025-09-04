@@ -1,0 +1,17 @@
+- name: Include mkdirs tasks
+  import_tasks: mkdirs.yaml
+
+- name: Include certs tasks
+  import_tasks: certs.yaml
+
+- name: Include apparmor tasks
+  import_tasks: apparmor.yaml
+
+- name: Check if mongos-vault-agent service is running
+  shell: systemctl is-active mongos-vault-agent
+  register: mongos_vault_agent_status
+  ignore_errors: true
+
+- name: Include vault tasks
+  import_tasks: vault.yaml
+  when: mongos_vault_agent_status.stdout != "active"

@@ -1,0 +1,2 @@
+source ~/.venvs/ansible-vault/bin/activate
+ansible-playbook playbooks/init-config-servers.yaml

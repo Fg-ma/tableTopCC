@@ -1,0 +1,69 @@
+- name: Set mongod apparmor profile name
+  set_fact:
+    mongod_apparmor_profile_name: "{{ mongo_base_dir | regex_replace('^/', '') | replace('/', '.') }}.bin.mongod"
+
+- name: Set AppArmor profile to complain mode before removal
+  command: aa-complain {{ mongod_apparmor_profile_name }}
+  become: true
+  ignore_errors: true
+
+- name: Remove mongod AppArmor profile file
+  file:
+    path: "/etc/apparmor.d/{{ mongod_apparmor_profile_name }}"
+    state: absent
+  become: true
+
+- name: Unload AppArmor profile from kernel
+  command: apparmor_parser -R /etc/apparmor.d/{{ mongod_apparmor_profile_name }}
+  become: true
+  ignore_errors: true
+
+# Restart script
+- name: Remove mongo-shard-vault-restart-script profile file
+  file:
+    path: /etc/apparmor.d/mongo-shard-vault-restart-script
+    state: absent
+
+- name: Put mongo-shard-vault-restart-script into complain mode (if still present in cache)
+  command: aa-complain mongo-shard-vault-restart-script
+  ignore_errors: true
+
+# Vault bin
+- name: Set vault apparmor profile name
+  set_fact:
+    vault_apparmor_profile_name: "{{ vault_dir | regex_replace('^/', '') | replace('/', '.') }}.bin.vault"
+
+- name: Remove AppArmor rule for mongo-shard-vault-restart.sh
+  lineinfile:
+    path: /etc/apparmor.d/{{ vault_apparmor_profile_name }}
+    line: "  {{ vault_dir }}/scripts/mongo/shard/mongo-shard-vault-restart.sh cx -> mongo-shard-vault-restart-script,"
+    state: absent
+  ignore_errors: true
+
+- name: Reload vault AppArmor profile
+  command: apparmor_parser -r /etc/apparmor.d/{{ vault_apparmor_profile_name }}
+  ignore_errors: true
+
+- name: Put vault profile in complain mode
+  command: aa-complain {{ vault_apparmor_profile_name }}
+  ignore_errors: true
+
+# Vault requests
+- name: Set vault requests apparmor profile name
+  set_fact:
+    vault_requests_apparmor_profile_name: "{{ vault_dir | regex_replace('^/', '') | replace('/', '.') }}.bin.vault_requests"
+
+- name: Remove AppArmor rule for mongo-shard-approle-vault-server-request.conf
+  lineinfile:
+    path: /etc/apparmor.d/{{ vault_requests_apparmor_profile_name }}
+    line: "  {{ mongo_base_dir }}/conf/mongo-shard-approle-vault-server-request.conf r,"
+    state: absent
+  ignore_errors: true
+
+- name: Reload vault_requests AppArmor profile
+  command: apparmor_parser -r /etc/apparmor.d/{{ vault_requests_apparmor_profile_name }}
+  ignore_errors: true
+
+- name: Put vault_requests profile in complain mode
+  command: aa-complain {{ vault_requests_apparmor_profile_name }}
+  ignore_errors: true

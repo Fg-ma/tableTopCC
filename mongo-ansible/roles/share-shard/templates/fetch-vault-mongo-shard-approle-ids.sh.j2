@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+log() { printf '%s %s\n' "$(date -Is)" "$*" >&2; }
+
+log "Starting fetch-vault-mongo-shard-approle-ids.sh"
+
+VAULT_TOKEN=$({{ vault_dir }}/bin/vault_requests {{ mongo_base_dir }}/conf/mongo-shard-approle-vault-server-request.conf)
+
+if [[ -z "$VAULT_TOKEN" ]]; then
+  echo "[ERROR] Failed to get Vault token"
+  exit 1
+fi
+
+CA_CERT="/mnt/vault/authorities/ca.pem"
+
+# Get role_id and secret_id from Vault
+ROLE_ID=$(curl -s --cacert "$CA_CERT" \
+  --header "X-Vault-Token: $VAULT_TOKEN" \
+  https://10.5.0.100:8200/v1/auth/approle/role/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}/role-id \
+  | jq -r '.data.role_id')
+
+SECRET_ID=$(curl -s --cacert "$CA_CERT" \
+  --header "X-Vault-Token: $VAULT_TOKEN" \
+  --request POST \
+  https://10.5.0.100:8200/v1/auth/approle/role/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}/secret-id \
+  | jq -r '.data.secret_id')
+
+
+if [[ -z "$ROLE_ID" || -z "$SECRET_ID" ]]; then
+  echo "[ERROR] Could not get role_id/secret_id from Vault."
+  exit 1
+fi
+
+mkdir -p {{ vault_dir }}/secrets/mongo/shard
+chown {{ mongo_vault_agent_user }}:{{ vault_agent_navigational_group }} \
+  "{{ vault_dir }}/secrets/mongo/shard"
+chmod 0710 \
+  "{{ vault_dir }}/secrets/mongo/shard"
+
+echo "$ROLE_ID" > {{ vault_dir }}/secrets/mongo/shard/role_id
+echo "$SECRET_ID" > {{ vault_dir }}/secrets/mongo/shard/secret_id
+chown {{ mongo_vault_agent_user }}:{{ mongo_vault_agent_group }} \
+  "{{ vault_dir }}/secrets/mongo/shard/role_id" \
+  "{{ vault_dir }}/secrets/mongo/shard/secret_id"
+chmod 0640 \
+  "{{ vault_dir }}/secrets/mongo/shard/role_id" \
+  "{{ vault_dir }}/secrets/mongo/shard/secret_id"
+
+exit 0

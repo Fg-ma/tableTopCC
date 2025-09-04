@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Restart mongod-configsvr service
+if systemctl list-units --full --all mongod-configsvr.service | grep -Fq loaded; then
+  systemctl restart mongod-configsvr
+fi

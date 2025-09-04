@@ -1,0 +1,46 @@
+- name: Init Shard servers - Server Setup
+  hosts: shard_servers
+  become: true
+  vars_prompt:
+    - name: vault_token
+      prompt: "Enter Vault access token"
+      private: true
+    - name: ca_key_password
+      prompt: "Enter CA key password"
+      private: true
+  vars_files:
+    - ../vars/share.yaml
+  roles:
+    - role: share
+    - role: share-shard
+    - role: apparmor-mongod
+    - role: apparmor-mongosh
+    - role: init-shard-servers-server-setup
+
+- name: Init Shard servers - Init Replica Set
+  hosts: tableTopNode1
+  become: true
+  vars_prompt:
+    - name: vault_token
+      prompt: "Enter Vault access token"
+      private: true
+  vars_files:
+    - ../vars/share.yaml
+  roles:
+    - role: init-shard-servers-replica-init
+
+- name: Init Shard servers - Auth start up
+  hosts: shard_servers
+  become: true
+  vars_files:
+    - ../vars/share.yaml
+  roles:
+    - role: init-shard-servers-auth-start-up
+
+- name: Init Shard servers - Add to Mongos
+  hosts: tableTopNode1
+  become: true
+  vars_files:
+    - ../vars/share.yaml
+  roles:
+    - role: init-shard-servers-notify-mongos

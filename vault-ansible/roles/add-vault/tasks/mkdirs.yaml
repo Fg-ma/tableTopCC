@@ -1,0 +1,116 @@
+# Main paths
+- name: Create vault scripts directory
+  file:
+    path: "{{ vault_dir }}/scripts"
+    state: directory
+    owner: "{{ vault_agent_user }}"
+    group: "{{ vault_agent_navigational_group }}"
+    mode: "0710"
+
+- name: Create vault templates directories
+  file:
+    path: "{{ vault_dir }}/templates"
+    state: directory
+    owner: "{{ vault_agent_user }}"
+    group: "{{ vault_agent_navigational_group }}"
+    mode: "0710"
+
+- name: Create vault agents directories
+  file:
+    path: "{{ vault_dir }}/agents"
+    state: directory
+    owner: "{{ vault_agent_user }}"
+    group: "{{ vault_agent_navigational_group }}"
+    mode: "0710"
+
+- name: Create vault authorities directories
+  file:
+    path: "{{ vault_dir }}/authorities"
+    state: directory
+    owner: "{{ vault_agent_user }}"
+    group: "{{ vault_agent_navigational_group }}"
+    mode: "0710"
+
+- name: Create vault authorities directories
+  file:
+    path: "{{ vault_dir }}/certs"
+    state: directory
+    owner: "{{ vault_agent_user }}"
+    group: "{{ vault_agent_navigational_group }}"
+    mode: "0710"
+
+# bin
+- name: Create {{ vault_dir }}/bin directory
+  file:
+    path: "{{ vault_dir }}/bin"
+    state: directory
+    owner: "{{ vault_agent_user }}"
+    group: "{{ vault_agent_navigational_group }}"
+    mode: "0710"
+
+- name: Add {{ vault_dir }}/bin to PATH
+  lineinfile:
+    path: /etc/profile.d/vault_path.sh
+    line: "export PATH=$PATH:{{ vault_dir }}/bin"
+    create: yes
+    mode: "0755"
+
+# certs
+- name: Add tmpfs mount to fstab (if not already present)
+  lineinfile:
+    path: /etc/fstab
+    regexp: '^tmpfs\s+{{ vault_dir }}/secrets\s+tmpfs'
+    line: "tmpfs {{ vault_dir }}/secrets tmpfs nodev,nosuid,noexec,size=8M 0 0"
+    state: present
+    create: yes
+    backup: yes
+
+- name: Ensure tmpfs is mounted
+  mount:
+    path: "{{ vault_dir }}/secrets"
+    src: tmpfs
+    fstype: tmpfs
+    opts: nodev,nosuid,noexec,size=8M
+    state: mounted
+
+- name: Set ownership on mounted tmpfs
+  file:
+    path: "{{ vault_dir }}/secrets"
+    owner: "{{ vault_agent_user }}"
+    group: "{{ vault_agent_navigational_group }}"
+    mode: "0710"
+
+- name: Create systemd unit to set Vault tmpfs permissions
+  copy:
+    dest: /etc/systemd/system/vault-init.service
+    owner: root
+    group: root
+    mode: "0640"
+    content: |
+      [Unit]
+      Description=Set ownership for Vault Agent tmpfs secrets
+      After=local-fs.target
+      Before=mongo-vault-agent.service
+
+      [Service]
+      Type=oneshot
+      ExecStart=/bin/chown {{ vault_agent_user }}:{{ vault_agent_navigational_group }} {{ vault_dir }}/secrets
+      ExecStart=/bin/chmod 0710 {{ vault_dir }}/secrets
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Reload systemd daemon
+  command: systemctl daemon-reload
+
+- name: Enable vault-agent init systemd service
+  systemd:
+    name: vault-init.service
+    enabled: true
+
+- name: Update the system ca certificates
+  become: true
+  command: update-ca-certificates
+  args:
+    creates: /etc/ssl/certs/vault-ca.pem

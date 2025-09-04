@@ -1,0 +1,68 @@
+- name: Delete mongo-shard-approle-reader policy from Vault
+  delegate_to: localhost
+  uri:
+    url: "{{ vault_url }}/v1/sys/policies/acl/mongo-shard-approle-reader-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+    method: DELETE
+    headers:
+      "X-Vault-Token": "{{ vault_token }}"
+    validate_certs: yes
+    status_code: 204
+  environment:
+    REQUESTS_CA_BUNDLE: "{{ local_ca_path }}"
+  register: delete_policy_reader
+
+- name: Delete mongo policy from Vault
+  delegate_to: localhost
+  uri:
+    url: "{{ vault_url }}/v1/sys/policies/acl/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+    method: DELETE
+    headers:
+      "X-Vault-Token": "{{ vault_token }}"
+    validate_certs: yes
+    status_code: 204
+  environment:
+    REQUESTS_CA_BUNDLE: "{{ local_ca_path }}"
+  register: delete_policy_mongo
+
+- name: Delete AppRole from Vault
+  delegate_to: localhost
+  uri:
+    url: "{{ vault_url }}/v1/auth/approle/role/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+    method: DELETE
+    headers:
+      "X-Vault-Token": "{{ vault_token }}"
+    validate_certs: yes
+    status_code: 204
+  environment:
+    REQUESTS_CA_BUNDLE: "{{ local_ca_path }}"
+  register: delete_approle
+
+- name: Delete PKI role from Vault
+  delegate_to: localhost
+  uri:
+    url: "{{ vault_url }}/v1/pki/roles/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+    method: DELETE
+    headers:
+      "X-Vault-Token": "{{ vault_token }}"
+    validate_certs: yes
+    status_code: 204
+  environment:
+    REQUESTS_CA_BUNDLE: "{{ local_ca_path }}"
+  register: delete_pki_role
+
+- name: Revoke all certs with OU={{ shard_cert_ou }} and specific CN pattern
+  delegate_to: localhost
+  shell: |
+    vault list -format=json pki/certs | jq -r '.[]' | while read serial; do
+      cert_json=$(VAULT_ADDR={{ vault_url }} VAULT_TOKEN={{ vault_token }} vault read -format=json pki/cert/"$serial")
+      ou=$(echo "$cert_json" | jq -r '.data.subject.organizational_unit[0]')
+      cn=$(echo "$cert_json" | jq -r '.data.subject.common_name')
+
+      # Match the OU and CN pattern
+      if [[ "$ou" == "{{ shard_cert_ou }}" && "$cn" == 10.{{ mongo_shard_subnet }}.0.* ]]; then
+        echo "Revoking serial: $serial (CN=$cn, OU=$ou)"
+        VAULT_ADDR={{ vault_url }} VAULT_TOKEN={{ vault_token }} vault write pki/revoke serial_number="$serial"
+      fi
+    done
+  environment:
+    REQUESTS_CA_BUNDLE: "{{ local_ca_path }}"

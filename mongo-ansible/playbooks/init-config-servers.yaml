@@ -1,0 +1,38 @@
+- name: Set up Config Servers - Server Set up
+  hosts: config_servers
+  become: true
+  vars_prompt:
+    - name: vault_token
+      prompt: "Enter Vault access token"
+      private: true
+    - name: ca_key_password
+      prompt: "Enter CA key password"
+      private: true
+  vars_files:
+    - ../vars/share.yaml
+  roles:
+    - role: share
+    - role: share-config
+    - role: apparmor-mongod
+    - role: apparmor-mongosh
+    - role: init-config-servers-server-setup
+
+- name: Set up Config Servers - Init replica
+  hosts: tableTopNode1
+  become: true
+  vars_prompt:
+    - name: vault_token
+      prompt: "Enter Vault access token"
+      private: true
+  vars_files:
+    - ../vars/share.yaml
+  roles:
+    - role: init-config-servers-replica-init
+
+- name: Set up Config Servers - Auth start up
+  hosts: config_servers
+  become: true
+  vars_files:
+    - ../vars/share.yaml
+  roles:
+    - role: init-config-servers-auth-start-up

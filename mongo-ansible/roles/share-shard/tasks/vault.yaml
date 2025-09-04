@@ -1,0 +1,173 @@
+- name: Create empty mongo-shard-vault-agent.pid file
+  file:
+    path: "{{ vault_dir }}/agents/mongo/shard/mongo-shard-vault-agent.pid"
+    state: touch
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0640"
+  become: true
+
+- name: Create vault policies
+  block:
+    - name: "Render Vault policy for mongo-shard-approle-reader"
+      template:
+        src: "{{ playbook_dir }}/../vault/policies/mongo-shard-approle-reader.hcl.j2"
+        dest: "/tmp/mongo-shard-approle-reader-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.hcl"
+
+    - name: "Read rendered mongo-shard-approle-reader policy file"
+      slurp:
+        src: "/tmp/mongo-shard-approle-reader-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.hcl"
+      register: slurped_mongo_shard_approle_reader_policy
+
+    - name: "Upload mongo-shard-approle-reader policy to vault"
+      delegate_to: localhost
+      community.hashi_vault.vault_write:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token }}"
+        path: "sys/policies/acl/mongo-shard-approle-reader-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+        ca_cert: "{{ local_ca_path }}"
+        data:
+          policy: "{{ slurped_mongo_shard_approle_reader_policy.content | b64decode }}"
+
+    - name: "Render Vault policy for mongo shard"
+      template:
+        src: "{{ playbook_dir }}/../vault/policies/mongo-shard.hcl.j2"
+        dest: "/tmp/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.hcl"
+
+    - name: "Read rendered mongo shard policy file"
+      slurp:
+        src: "/tmp/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.hcl"
+      register: slurped_mongo_shard_policy
+
+    - name: "Upload mongo shard policy to vault"
+      delegate_to: localhost
+      community.hashi_vault.vault_write:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token }}"
+        path: "sys/policies/acl/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+        ca_cert: "{{ local_ca_path }}"
+        data:
+          policy: "{{ slurped_mongo_shard_policy.content | b64decode }}"
+
+  always:
+    - name: "Clean up temporary policy file"
+      file:
+        path: "/tmp/mongo-shard-approle-reader-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.hcl"
+        state: absent
+
+    - name: "Clean up temporary policy file"
+      file:
+        path: "/tmp/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.hcl"
+        state: absent
+
+- name: "Create AppRole for node"
+  delegate_to: localhost
+  community.hashi_vault.vault_write:
+    url: "{{ vault_url }}"
+    token: "{{ vault_token }}"
+    path: "auth/approle/role/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+    ca_cert: "{{ local_ca_path }}"
+    data:
+      token_policies: "mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+      token_ttl: "1h"
+      token_max_ttl: "4h"
+
+- name: Copy Mongo Shard Vault Agent
+  template:
+    src: "{{ playbook_dir }}/../vault/agents/mongo-shard-agent.hcl.j2"
+    dest: "{{ vault_dir }}/agents/mongo/shard/mongo-shard-agent.hcl"
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0400"
+
+- name: Deploy rendered Vault Agent mongo-shard.pem.ctmpl template
+  template:
+    src: "{{ playbook_dir }}/../vault/templates/mongo-shard.pem.ctmpl.j2"
+    dest: "{{ vault_dir }}/templates/mongo/shard/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.pem.ctmpl"
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0400"
+
+- name: Install mongo-shard-approle-vault-server-request.conf
+  template:
+    src: mongo-shard-approle-vault-server-request.conf.j2
+    dest: "{{ mongo_base_dir }}/conf/mongo-shard-approle-vault-server-request.conf"
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0440"
+
+- name: Install fetch-vault-mongo-shard-approle-ids script
+  template:
+    src: fetch-vault-mongo-shard-approle-ids.sh.j2
+    dest: "{{ vault_dir }}/scripts/mongo/shard/fetch-vault-mongo-shard-approle-ids.sh"
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0550"
+
+- name: Create systemd unit to run the fetcher on boot
+  copy:
+    dest: /etc/systemd/system/fetch-vault-mongo-shard-approle-ids.service
+    content: |
+      [Unit]
+      Description=Vault Mongo shard approle ids fetcher
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      User=root
+      Group={{ vault_agent_bin_group }}
+      Type=oneshot
+      ExecStartPre=/bin/mkdir -p {{ vault_dir }}/secrets/mongo/shard
+      ExecStart=/bin/bash {{ vault_dir }}/scripts/mongo/shard/fetch-vault-mongo-shard-approle-ids.sh
+      StandardOutput=journal
+      StandardError=journal
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: Reload systemd
+
+- name: Install restart-mongo-shard-services script
+  template:
+    src: mongo-shard-vault-restart.sh.j2
+    dest: "{{ vault_dir }}/scripts/mongo/shard/mongo-shard-vault-restart.sh"
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0550"
+
+- name: Create systemd service file for mongo shard vault agent
+  copy:
+    dest: /etc/systemd/system/mongo-shard-vault-agent.service
+    content: |
+      [Unit]
+      Description=Vault Agent
+      After=network.target fetch-vault-mongo-shard-approle-ids.service
+      Requires=fetch-vault-mongo-shard-approle-ids.service
+
+      [Service]
+      User={{ mongo_vault_agent_user }}
+      Group={{ mongo_vault_agent_group }}
+      ExecStart={{ vault_dir }}/bin/vault agent -config={{ vault_dir }}/agents/mongo/shard/mongo-shard-agent.hcl
+      Restart=on-failure
+      PIDFile={{ vault_dir }}/agents/mongo/shard/mongo-shard-vault-agent.pid
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: Reload systemd
+
+- name: Force Reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: Enable & start fetcher
+  systemd:
+    name: fetch-vault-mongo-shard-approle-ids.service
+    state: started
+    enabled: yes
+  register: fetcher_status
+
+- name: Start and enable Mongo Shard Vault Agent service
+  systemd:
+    name: mongo-shard-vault-agent
+    state: started
+    enabled: yes

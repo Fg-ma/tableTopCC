@@ -1,0 +1,31 @@
+- name: Wait for all shard-server members to be reachable
+  wait_for:
+    host: "10.{{ mongo_shard_subnet }}.0.{{ hostvars[item].ansible_host.split('.')[-1] }}"
+    port: "{{ shard_port }}"
+    timeout: 120
+    delay: 5
+    state: started
+  loop: "{{ groups['shard_servers'] }}"
+  ignore_errors: true
+
+- name: Add shard to cluster
+  become: true
+  become_user: "{{ mongo_vault_agent_user }}"
+  command: >
+    {{ mongo_base_dir }}/bin/mongosh
+    --host {{ mongos_node }}
+    --port {{ mongos_port }}
+    --tls
+    --tlsCAFile {{ vault_dir }}/authorities/ca.pem
+    --tlsCertificateKeyFile {{ vault_dir }}/secrets/mongo/mongos/mongos-10.{{ mongo_mongos_subnet }}.0.{{ ansible_host.split('.')[-1] }}.pem
+    --authenticationMechanism MONGODB-X509
+    --authenticationDatabase '$external'
+    --eval '
+      const hosts = [
+        {% for host in groups["shard_servers"] %}
+        "10.{{ mongo_shard_subnet }}.0.{{ hostvars[host].ansible_host.split('.')[-1] }}:{{ shard_port }}"{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ];
+      const shardString = "{{ shard_repl_set_name }}/" + hosts.join(",");
+      sh.addShard(shardString);
+    '

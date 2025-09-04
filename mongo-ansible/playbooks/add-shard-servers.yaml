@@ -1,0 +1,30 @@
+- name: Set up new Shard Servers - Server Set up
+  hosts: new_shard_servers
+  become: true
+  vars_prompt:
+    - name: vault_token
+      prompt: "Enter Vault access token"
+      private: true
+    - name: ca_key_password
+      prompt: "Enter CA key password"
+      private: true
+  vars_files:
+    - ../vars/share.yaml
+  roles:
+    - role: share
+    - role: share-shards
+    - role: apparmor-mongod
+    - role: apparmor-mongosh
+    - role: add-new-shard-servers
+
+- name: Set up new Shard Servers - add to replica set
+  hosts: tableTopNode1
+  become: true
+  vars_prompt:
+    - name: vault_token
+      prompt: "Enter Vault access token"
+      private: true
+  vars_files:
+    - ../vars/share.yaml
+  roles:
+    - role: add-new-shard-servers-add-to-replica-set

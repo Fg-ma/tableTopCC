@@ -1,0 +1,8 @@
+path "auth/approle/login" {
+  capabilities = ["create"]
+}
+
+path "pki/issue/mongos-10.{{ mongo_mongos_subnet }}.0.{{ ansible_host.split('.')[-1] }}" {
+  capabilities = ["create", "update", "read", "list"]
+}
+

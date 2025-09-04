@@ -1,0 +1,9 @@
+- name: Install required AppArmor packages
+  apt:
+    name:
+      - apparmor
+      - apparmor-utils
+      - apparmor-profiles
+      - apparmor-profiles-extra
+    state: present
+  become: true

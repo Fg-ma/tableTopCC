@@ -1,0 +1,45 @@
+- name: Create MongoDB data/log directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0750"
+  loop:
+    - "{{ mongo_base_dir }}/config/data"
+    - "{{ mongo_base_dir }}/config/logs"
+    - "{{ mongo_base_dir }}/config/conf"
+
+- name: Create empty mongod.pid file
+  file:
+    path: "{{ mongo_base_dir }}/config/logs/mongod.pid"
+    state: touch
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0640"
+  become: true
+
+- name: Render mongod “no-auth” config file
+  template:
+    src: mongod-no-auth.conf.j2
+    dest: "{{ mongo_base_dir }}/config/conf/mongod-no-auth.conf"
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0440"
+
+- name: Start MongoDB without auth
+  become: true
+  become_user: "{{ mongo_vault_agent_user }}"
+  shell: >
+    {{ mongo_base_dir }}/bin/mongod
+    --config "{{ mongo_base_dir }}/config/conf/mongod-no-auth.conf"
+  args:
+    creates: "{{ mongo_base_dir }}/config/logs/mongod.log"
+
+- name: Wait for MongoDB port to be open
+  ignore_errors: true
+  wait_for:
+    host: "10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+    port: "{{ config_port }}"
+    timeout: 60
+    delay: 5

@@ -1,0 +1,16 @@
+server:
+  ip: {{ tabletop_vault_server_ip }}
+  port: {{ tabletop_vault_server_port }}
+
+tls:
+  ca: {{ vault_dir }}/authorities/ca.pem
+  cert: {{ vault_dir }}/certs/mongo/vaultServerClient.crt
+  key: {{ vault_dir }}/certs/mongo/vaultServerClient.key
+
+request:
+  id: {{ inventory_hostname }}
+  ip: 10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+  purpose: Get role_id and secret_id for mongo config server secrets
+  policies:
+    - mongo-config-approle-reader-10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+  num_uses: 2

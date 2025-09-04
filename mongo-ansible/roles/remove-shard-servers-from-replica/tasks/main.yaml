@@ -1,0 +1,77 @@
+- name: Include vault_fetcher role
+  include_role:
+    name: vault-fetcher
+  vars:
+    fetcher_secret_var_name: "mongo_admin"
+    fetcher_secret_path: "{{ mongo_admin_secret_path }}"
+    fetcher_vault_token: "{{ vault_token }}"
+    fetcher_vault_url: "{{ vault_url }}"
+    fetcher_ca_path: "{{ local_ca_path }}"
+    fetcher_engine_version: 2
+
+- name: Get current primary host
+  shell: |
+    {{ mongo_base_dir }}/bin/mongosh "mongodb://10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}:{{ shard_port }}/admin?authMechanism=MONGODB-X509&replicaSet={{ shard_repl_set_name }}&tls=true&tlsCAFile={{ vault_dir }}/authorities/ca.pem&tlsCertificateKeyFile={{ vault_dir }}/secrets/mongo/shard/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.pem&directConnection=true" --quiet --eval '
+      const status = rs.status();
+      print(status.members.find(m => m.stateStr === "PRIMARY").name);
+    '
+  register: current_primary_result
+  run_once: true
+  no_log: true
+
+- name: Set current primary as a fact
+  set_fact:
+    current_primary: "{{ current_primary_result.stdout.strip() }}"
+
+- name: Remove all shard servers that are not the primary (only if present)
+  shell: |
+    {{ mongo_base_dir }}/bin/mongosh "mongodb://10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}:{{ shard_port }}/admin?authMechanism=MONGODB-X509&replicaSet={{ shard_repl_set_name }}&tls=true&tlsCAFile={{ vault_dir }}/authorities/ca.pem&tlsCertificateKeyFile={{ vault_dir }}/secrets/mongo/shard/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.pem&directConnection=true" --eval '
+    const currentMembers = rs.status().members.map(m => m.name);
+    {% for host in groups["remove_shard_servers"] %}
+    const target = "10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}:{{ shard_port }}";
+    if (target === "{{ current_primary }}") {
+      print("Skipping primary: " + target);
+    } else if (currentMembers.includes(target)) {
+      print("Removing shard: " + target);
+      rs.remove(target);
+      sleep(1000);
+    } else {
+      print("Not a member, skipping: " + target);
+    }
+    {% endfor %}
+    '
+  run_once: true
+  no_log: true
+
+- name: Step down current primary if it's in the remove list
+  shell: |
+    {{ mongo_base_dir }}/bin/mongosh "mongodb://10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}:{{ shard_port }}/admin?authMechanism=MONGODB-X509&replicaSet={{ shard_repl_set_name }}&tls=true&tlsCAFile={{ vault_dir }}/authorities/ca.pem&tlsCertificateKeyFile={{ vault_dir }}/secrets/mongo/shard/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.pem&directConnection=true" --eval '
+    try {
+      rs.stepDown(60, 60);
+    } catch (e) {
+      print("Step down failed: " + e.message);
+    }
+    '
+  when: current_primary in (groups['remove_shard_servers'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^.*\\.(\\d+)$', '10.{{ mongo_shard_subnet }}.0.\\1') | map('regex_replace', '$', ':' ~ shard_port) | list)
+  run_once: true
+  no_log: true
+
+- name: Wait for new primary to be elected
+  shell: |
+    sleep 2
+    {{ mongo_base_dir }}/bin/mongosh "mongodb://10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}:{{ shard_port }}/admin?authMechanism=MONGODB-X509&replicaSet={{ shard_repl_set_name }}&tls=true&tlsCAFile={{ vault_dir }}/authorities/ca.pem&tlsCertificateKeyFile={{ vault_dir }}/secrets/mongo/shard/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.pem&directConnection=true" --quiet --eval 'print(rs.isMaster().primary)'
+  when: current_primary in (groups['remove_shard_servers'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^.*\\.(\\d+)$', '10.{{ mongo_shard_subnet }}.0.\\1') | map('regex_replace', '$', ':' ~ shard_port) | list)
+  register: new_primary_result
+  run_once: true
+  no_log: true
+
+- name: Remove old primary from new primary
+  shell: |
+    {{ mongo_base_dir }}/bin/mongosh "mongodb://{{ new_primary_result.stdout | trim }}/admin?authMechanism=MONGODB-X509&replicaSet={{ shard_repl_set_name }}&tls=true&tlsCAFile={{ vault_dir }}/authorities/ca.pem&tlsCertificateKeyFile={{ vault_dir }}/secrets/mongo/shard/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.pem" --eval '
+    rs.remove("{{ current_primary }}");
+    '
+  when:
+    - current_primary in (groups['remove_shard_servers'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^.*\\.(\\d+)$', '10.{{ mongo_shard_subnet }}.0.\\1') | map('regex_replace', '$', ':' ~ shard_port) | list)
+    - new_primary_result.stdout | trim != ''
+  run_once: true
+  no_log: true

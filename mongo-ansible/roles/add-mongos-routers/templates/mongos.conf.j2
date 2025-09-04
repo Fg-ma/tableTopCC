@@ -1,0 +1,27 @@
+systemLog:
+  destination: file
+  path: {{ mongo_base_dir }}/mongos/logs/mongos.log
+  logAppend: true
+
+net:
+  port: {{ mongos_port }}
+  bindIp: 10.{{ mongo_mongos_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+  tls:
+    mode: requireTLS
+    certificateKeyFile: {{ vault_dir }}/secrets/mongo/mongos/mongos-10.{{ mongo_mongos_subnet }}.0.{{ ansible_host.split('.')[-1] }}.pem
+    CAFile: {{ vault_dir }}/authorities/ca.pem
+    allowConnectionsWithoutCertificates: false
+    allowInvalidCertificates: false
+
+sharding:
+  configDB: {{ config_repl_set_name }}/{{ config_server_hosts | join(',') }}
+
+security:
+  clusterAuthMode: x509
+
+setParameter:
+  authenticationMechanisms: "MONGODB-X509"
+
+processManagement:
+  pidFilePath: "{{ mongo_base_dir }}/mongos/logs/mongos.pid"
+  

@@ -1,0 +1,22 @@
+- name: Include apt tasks
+  import_tasks: apt.yaml
+
+- name: Set mongosh apparmor profile name
+  set_fact:
+    mongosh_apparmor_profile_name: "{{ mongo_base_dir | regex_replace('^/', '') | replace('/', '.') }}.bin.mongosh"
+
+- name: Render {{ mongosh_apparmor_profile_name }}
+  template:
+    src: mongosh.j2
+    dest: "/etc/apparmor.d/{{ mongosh_apparmor_profile_name }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reload AppArmor profile for mongosh
+  command: apparmor_parser -r /etc/apparmor.d/{{ mongosh_apparmor_profile_name }}
+  become: true
+
+- name: Set enforce mode for mongosh
+  command: aa-enforce {{ mongosh_apparmor_profile_name }}
+  become: true

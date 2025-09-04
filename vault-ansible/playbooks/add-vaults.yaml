@@ -1,0 +1,8 @@
+- name: Add vault to node
+  hosts: new_vaults
+  become: true
+  vars_files:
+    - ../vars/vault.yaml
+  roles:
+    - role: add-vault
+    - role: apparmor-vault

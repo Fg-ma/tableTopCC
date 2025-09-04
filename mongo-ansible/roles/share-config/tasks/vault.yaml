@@ -1,0 +1,173 @@
+- name: Create empty mongo-config-vault-agent.pid file
+  file:
+    path: "{{ vault_dir }}/agents/mongo/config/mongo-config-vault-agent.pid"
+    state: touch
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0640"
+  become: true
+
+- name: Create vault policies
+  block:
+    - name: "Render Vault policy for mongo-config-approle-reader"
+      template:
+        src: "{{ playbook_dir }}/../vault/policies/mongo-config-approle-reader.hcl.j2"
+        dest: "/tmp/mongo-config-approle-reader-10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}.hcl"
+
+    - name: "Read rendered mongo-config-approle-reader policy file"
+      slurp:
+        src: "/tmp/mongo-config-approle-reader-10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}.hcl"
+      register: slurped_mongo_config_approle_reader_policy
+
+    - name: "Upload mongo-config-approle-reader policy to vault"
+      delegate_to: localhost
+      community.hashi_vault.vault_write:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token }}"
+        path: "sys/policies/acl/mongo-config-approle-reader-10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+        ca_cert: "{{ local_ca_path }}"
+        data:
+          policy: "{{ slurped_mongo_config_approle_reader_policy.content | b64decode }}"
+
+    - name: "Render Vault policy for mongo config"
+      template:
+        src: "{{ playbook_dir }}/../vault/policies/mongo-config.hcl.j2"
+        dest: "/tmp/mongo-config-10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}.hcl"
+
+    - name: "Read rendered mongo config policy file"
+      slurp:
+        src: "/tmp/mongo-config-10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}.hcl"
+      register: slurped_mongo_config_policy
+
+    - name: "Upload mongo config policy to vault"
+      delegate_to: localhost
+      community.hashi_vault.vault_write:
+        url: "{{ vault_url }}"
+        token: "{{ vault_token }}"
+        path: "sys/policies/acl/mongo-config-10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+        ca_cert: "{{ local_ca_path }}"
+        data:
+          policy: "{{ slurped_mongo_config_policy.content | b64decode }}"
+
+  always:
+    - name: "Clean up temporary policy file"
+      file:
+        path: "/tmp/mongo-config-approle-reader-10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}.hcl"
+        state: absent
+
+    - name: "Clean up temporary policy file"
+      file:
+        path: "/tmp/mongo-config-10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}.hcl"
+        state: absent
+
+- name: "Create AppRole for node"
+  delegate_to: localhost
+  community.hashi_vault.vault_write:
+    url: "{{ vault_url }}"
+    token: "{{ vault_token }}"
+    path: "auth/approle/role/mongo-config-10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+    ca_cert: "{{ local_ca_path }}"
+    data:
+      token_policies: "mongo-config-10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+      token_ttl: "1h"
+      token_max_ttl: "4h"
+
+- name: Copy Mongo Config Vault Agent
+  template:
+    src: "{{ playbook_dir }}/../vault/agents/mongo-config-agent.hcl.j2"
+    dest: "{{ vault_dir }}/agents/mongo/config/mongo-config-agent.hcl"
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0400"
+
+- name: Deploy rendered Vault Agent mongo-config.pem.ctmpl template
+  template:
+    src: "{{ playbook_dir }}/../vault/templates/mongo-config.pem.ctmpl.j2"
+    dest: "{{ vault_dir }}/templates/mongo/config/mongo-config-10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}.pem.ctmpl"
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0400"
+
+- name: Install mongo-config-approle-vault-server-request.conf
+  template:
+    src: mongo-config-approle-vault-server-request.conf.j2
+    dest: "{{ mongo_base_dir }}/conf/mongo-config-approle-vault-server-request.conf"
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0440"
+
+- name: Install fetch-vault-mongo-config-approle-ids script
+  template:
+    src: fetch-vault-mongo-config-approle-ids.sh.j2
+    dest: "{{ vault_dir }}/scripts/mongo/config/fetch-vault-mongo-config-approle-ids.sh"
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0550"
+
+- name: Create systemd unit to run the fetcher on boot
+  copy:
+    dest: /etc/systemd/system/fetch-vault-mongo-config-approle-ids.service
+    content: |
+      [Unit]
+      Description=Vault Mongo config approle ids fetcher
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      User=root
+      Group={{ vault_agent_bin_group }}
+      Type=oneshot
+      ExecStartPre=/bin/mkdir -p {{ vault_dir }}/secrets/mongo/config
+      ExecStart=/bin/bash {{ vault_dir }}/scripts/mongo/config/fetch-vault-mongo-config-approle-ids.sh
+      StandardOutput=journal
+      StandardError=journal
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: Reload systemd
+
+- name: Install restart-mongo-config-services script
+  template:
+    src: mongo-config-vault-restart.sh.j2
+    dest: "{{ vault_dir }}/scripts/mongo/config/mongo-config-vault-restart.sh"
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0550"
+
+- name: Create systemd service file for mongo config vault agent
+  copy:
+    dest: /etc/systemd/system/mongo-config-vault-agent.service
+    content: |
+      [Unit]
+      Description=Vault Agent
+      After=network.target fetch-vault-mongo-config-approle-ids.service
+      Requires=fetch-vault-mongo-config-approle-ids.service
+
+      [Service]
+      User={{ mongo_vault_agent_user }}
+      Group={{ mongo_vault_agent_group }}
+      ExecStart={{ vault_dir }}/bin/vault agent -config={{ vault_dir }}/agents/mongo/config/mongo-config-agent.hcl
+      Restart=on-failure
+      PIDFile={{ vault_dir }}/agents/mongo/config/mongo-config-vault-agent.pid
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: Reload systemd
+
+- name: Force Reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: Enable & start fetcher
+  systemd:
+    name: fetch-vault-mongo-config-approle-ids.service
+    state: started
+    enabled: yes
+  register: fetcher_status
+
+- name: Start and enable Mongo Config Vault Agent service
+  systemd:
+    name: mongo-config-vault-agent
+    state: started
+    enabled: yes

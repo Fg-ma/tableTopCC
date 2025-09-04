@@ -1,0 +1,65 @@
+# bin
+- name: Create {{ mongo_base_dir }}/bin directory
+  file:
+    path: "{{ mongo_base_dir }}/bin"
+    state: directory
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0750"
+
+- name: Add {{ mongo_base_dir }}/bin to PATH
+  lineinfile:
+    path: /etc/profile.d/mongo_path.sh
+    line: "export PATH=$PATH:{{ mongo_base_dir }}/bin"
+    create: yes
+    mode: "0750"
+
+# Conf
+- name: Create {{ mongo_base_dir }}/conf directory
+  file:
+    path: "{{ mongo_base_dir }}/conf"
+    state: directory
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0750"
+
+# Vault
+- name: Create {{ vault_dir }}/secrets/mongo directory
+  file:
+    path: "{{ vault_dir }}/secrets/mongo"
+    state: directory
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ vault_agent_navigational_group }}"
+    mode: "0710"
+
+- name: Create {{ vault_dir }}/scripts/mongo directory
+  file:
+    path: "{{ vault_dir }}/scripts/mongo"
+    state: directory
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ vault_agent_navigational_group }}"
+    mode: "0710"
+
+- name: Create {{ vault_dir }}/templates/mongo directory
+  file:
+    path: "{{ vault_dir }}/templates/mongo"
+    state: directory
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ vault_agent_navigational_group }}"
+    mode: "0710"
+
+- name: Create {{ vault_dir }}/agents/mongo directory
+  file:
+    path: "{{ vault_dir }}/agents/mongo"
+    state: directory
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ vault_agent_navigational_group }}"
+    mode: "0710"
+
+- name: Create {{ vault_dir }}/certs/mongo directory
+  file:
+    path: "{{ vault_dir }}/certs/mongo"
+    state: directory
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ vault_agent_navigational_group }}"
+    mode: "0710"

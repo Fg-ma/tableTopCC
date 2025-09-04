@@ -1,0 +1,32 @@
+# Vault
+- name: Create {{ vault_dir }}/secrets/mongo/config directory
+  file:
+    path: "{{ vault_dir }}/secrets/mongo/config"
+    state: directory
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ vault_agent_navigational_group }}"
+    mode: "0710"
+
+- name: Create {{ vault_dir }}/scripts/mongo/config directory
+  file:
+    path: "{{ vault_dir }}/scripts/mongo/config"
+    state: directory
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ vault_agent_navigational_group }}"
+    mode: "0710"
+
+- name: Create {{ vault_dir }}/templates/mongo/config directory
+  file:
+    path: "{{ vault_dir }}/templates/mongo/config"
+    state: directory
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ vault_agent_navigational_group }}"
+    mode: "0710"
+
+- name: Create {{ vault_dir }}/agents/mongo/config directory
+  file:
+    path: "{{ vault_dir }}/agents/mongo/config"
+    state: directory
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ vault_agent_navigational_group }}"
+    mode: "0710"

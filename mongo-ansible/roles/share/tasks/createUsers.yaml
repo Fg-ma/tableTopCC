@@ -1,0 +1,26 @@
+- name: Ensure mongo certs group exists
+  group:
+    name: "{{ mongo_certs_group }}"
+    state: present
+
+- name: Ensure mongo certs user exists
+  user:
+    name: "{{ mongo_certs_user }}"
+    groups:
+      - "{{ mongo_certs_group }}"
+    state: present
+
+- name: Ensure mongo vault agent group exists
+  group:
+    name: "{{ mongo_vault_agent_group }}"
+    state: present
+
+- name: Ensure mongo vault agent user exists
+  user:
+    name: "{{ mongo_vault_agent_user }}"
+    groups:
+      - "{{ vault_agent_navigational_group }}"
+      - "{{ vault_agent_authorities_group }}"
+      - "{{ mongo_vault_agent_group }}"
+      - "{{ vault_agent_bin_group }}"
+    state: present

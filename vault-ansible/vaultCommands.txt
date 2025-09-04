@@ -1,0 +1,13 @@
+// Format new vault node
+sudo apt update
+sudo apt install -y parted
+lsblk -f
+sudo parted /dev/sdb mklabel gpt
+sudo parted -a opt /dev/sdb mkpart primary ext4 0% 100%
+sudo mkfs.ext4 /dev/sdb1
+lsblk -f
+sudo nano /etc/fstab
+UUID=1234-5678 /mnt/vault  ext4  defaults  0  2
+sudo mkdir -p /mnt/vault
+sudo mount /dev/vdd1 /mnt/vault
+systemctl daemon-reload

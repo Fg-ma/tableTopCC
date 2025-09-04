@@ -1,0 +1,38 @@
+- name: Wait for all shard-server members to be reachable
+  wait_for:
+    host: "10.{{ mongo_shard_subnet }}.0.{{ hostvars[item].ansible_host.split('.')[-1] }}"
+    port: "{{ shard_port }}"
+    timeout: 120
+    delay: 5
+    state: started
+  loop: "{{ groups['new_shard_servers'] }}"
+  ignore_errors: true
+
+- name: Include vault_fetcher role
+  include_role:
+    name: vault-fetcher
+  vars:
+    fetcher_secret_var_name: "mongo_admin"
+    fetcher_secret_path: "{{ mongo_admin_secret_path }}"
+    fetcher_vault_token: "{{ vault_token }}"
+    fetcher_vault_url: "{{ vault_url }}"
+    fetcher_ca_path: "{{ local_ca_path }}"
+    fetcher_engine_version: 2
+
+- name: Add new servers to replica
+  shell: |
+    {{ mongo_base_dir }}/bin/mongosh "mongodb://10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}:{{ shard_port }}/admin?authMechanism=MONGODB-X509&replicaSet={{ shard_repl_set_name }}&tls=true&tlsCAFile={{ vault_dir }}/authorities/ca.pem&tlsCertificateKeyFile={{ vault_dir }}/secrets/mongo/shard/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.pem&directConnection=true" --eval '
+    const currentConfig = rs.conf();
+    let maxId = -1;
+    for (const m of currentConfig.members) {
+      if (m._id > maxId) maxId = m._id;
+    }
+
+    {% for host in groups["new_shard_servers"] %}
+    maxId++;
+    rs.add({ _id: maxId, host: "10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}:{{ shard_port }}" });
+    sleep(1000);
+    {% endfor %}
+    '
+  run_once: true
+  no_log: true

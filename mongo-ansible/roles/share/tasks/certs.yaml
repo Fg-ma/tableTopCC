@@ -1,0 +1,109 @@
+- name: Check if vaultServerClient.crt exists
+  ansible.builtin.stat:
+    path: "{{ vault_dir }}/certs/mongo/vaultServerClient.crt"
+  register: vault_key_stat
+
+- name: Generate vaultServerClient certs and key
+  block:
+    - name: Install vaultServerClient.cnf
+      template:
+        src: vaultServerClient.cnf.j2
+        dest: "{{ vault_dir }}/certs/mongo/vaultServerClient.cnf"
+        owner: "{{ mongo_certs_user }}"
+        group: "{{ mongo_certs_group }}"
+        mode: "0640"
+
+    - name: Generate vaultServerClient private key
+      command: >
+        openssl genrsa -out {{ vault_dir }}/certs/mongo/vaultServerClient.key 4096
+      args:
+        creates: "{{ vault_dir }}/certs/mongo/vaultServerClient.key"
+      become: true
+
+    - name: Generate vaultServerClient CSR
+      command: >
+        openssl req -new 
+        -key {{ vault_dir }}/certs/mongo/vaultServerClient.key
+        -out {{ vault_dir }}/certs/mongo/vaultServerClient.csr
+        -config {{ vault_dir }}/certs/mongo/vaultServerClient.cnf
+      args:
+        creates: "{{ vault_dir }}/certs/mongo/vaultServerClient.csr"
+      become: true
+
+    - name: Include vault_fetcher role
+      include_role:
+        name: vault-fetcher
+      vars:
+        fetcher_secret_var_name: "ca_key_dict"
+        fetcher_secret_path: "{{ ca_key_secret_path }}"
+        fetcher_vault_token: "{{ vault_token }}"
+        fetcher_vault_url: "{{ vault_url }}"
+        fetcher_ca_path: "{{ local_ca_path }}"
+        fetcher_engine_version: 2
+
+    - name: Write CA key to a secure temporary file
+      tempfile:
+        state: file
+        suffix: ".key"
+      register: temp_ca_key
+
+    - name: Set permissions on temporary CA key file
+      file:
+        path: "{{ temp_ca_key.path }}"
+        mode: "0600"
+
+    - name: Write the CA key content to temp file
+      copy:
+        content: "{{ ca_key_dict.content }}"
+        dest: "{{ temp_ca_key.path }}"
+        mode: "0600"
+      no_log: true
+
+    - name: Decrypt encrypted CA key
+      command: >
+        openssl rsa
+        -in {{ temp_ca_key.path }}
+        -out {{ temp_ca_key.path }}.decrypted.key
+        -passin pass:{{ ca_key_password }}
+
+    - name: Sign vaultServerClient CSR to create vaultServerClient certificate
+      command: >
+        openssl x509 -req
+        -in {{ vault_dir }}/certs/mongo/vaultServerClient.csr
+        -CA {{ vault_dir }}/authorities/ca.pem
+        -CAkey {{ temp_ca_key.path }}.decrypted.key
+        -CAcreateserial
+        -out {{ vault_dir }}/certs/mongo/vaultServerClient.crt
+        -days 365
+        -sha256
+        -extfile {{ vault_dir }}/certs/mongo/vaultServerClient.cnf
+        -extensions req_ext
+      args:
+        creates: "{{ vault_dir }}/certs/mongo/vaultServerClient.crt"
+      become: true
+
+    - name: Delete temporary CA key file
+      file:
+        path: "{{ temp_ca_key.path }}"
+        state: absent
+      no_log: true
+
+    - name: Delete temporary Decrypted CA key file
+      file:
+        path: "{{ temp_ca_key.path }}.pk8"
+        state: absent
+      no_log: true
+
+    - name: Fix ownership/permissions of certs
+      file:
+        path: "{{ item }}"
+        owner: "{{ mongo_certs_user }}"
+        group: "{{ mongo_certs_group }}"
+        mode: "0640"
+      loop:
+        - "{{ vault_dir }}/certs/mongo/vaultServerClient.key"
+        - "{{ vault_dir }}/certs/mongo/vaultServerClient.crt"
+        - "{{ vault_dir }}/certs/mongo/vaultServerClient.csr"
+  when: not vault_key_stat.stat.exists
+  become: true
+  become_user: root

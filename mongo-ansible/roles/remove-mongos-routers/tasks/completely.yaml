@@ -1,0 +1,89 @@
+- name: Stop fetch-vault-mongo-approle-ids service
+  ansible.builtin.systemd:
+    name: fetch-vault-mongo-approle-ids.service
+    state: stopped
+    enabled: no
+  ignore_errors: true
+  become: true
+
+- name: Stop mongos service
+  ansible.builtin.systemd:
+    name: mongos.service
+    state: stopped
+    enabled: no
+  ignore_errors: true
+  become: true
+
+- name: Remove fetch-vault-mongo-approle-ids systemd service file
+  ansible.builtin.file:
+    path: /etc/systemd/system/fetch-vault-mongo-approle-ids.service
+    state: absent
+  become: true
+
+- name: Stop mongos-vault-agent service
+  ansible.builtin.systemd:
+    name: mongos-vault-agent.service
+    state: stopped
+    enabled: no
+  become: true
+
+- name: Kill mongod process (ignoring failure if not running)
+  command: |
+    pkill -F "{{ vault_dir }}/agents/mongo/mongos/mongos-vault-agent.pid"
+  ignore_errors: true
+  become: true
+
+- name: Remove mongos-vault-agent systemd service file
+  ansible.builtin.file:
+    path: /etc/systemd/system/mongos-vault-agent.service
+    state: absent
+  become: true
+
+# - name: Unmount {{ mongo_base_dir }} dir if mounted
+#   mount:
+#     path: "{{ mongo_base_dir }}"
+#     state: unmounted
+#   ignore_errors: true
+
+# - name: Remove {{ mongo_base_dir }} dir entry from fstab
+#   lineinfile:
+#     path: /etc/fstab
+#     regexp: '^\S+\s+{{ mongo_base_dir }}\s+'
+#     state: absent
+
+# - name: Remove {{ mongo_base_dir }} directory
+#   file:
+#     path: "{{ mongo_base_dir }}"
+#     state: absent
+
+- name: Find all contents of the {{ mongo_base_dir }} directory
+  find:
+    paths: "{{ mongo_base_dir }}"
+    file_type: any
+    recurse: yes
+  register: mongo_base_dir_contents
+
+- name: Remove all contents of the {{ mongo_base_dir }} directory
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ mongo_base_dir_contents.files }}"
+
+- name: Remove /etc/profile.d/mongo_path.sh
+  file:
+    path: /etc/profile.d/mongo_path.sh
+    state: absent
+
+- name: Remove sudoers rule for {{ mongo_vault_agent_user }}
+  file:
+    path: "/etc/sudoers.d/{{ mongo_vault_agent_user }}-mongo"
+    state: absent
+
+- name: Include completely-apparmor tasks
+  import_tasks: completely-apparmor.yaml
+
+- name: Include completely-dirs tasks
+  import_tasks: completely-dirs.yaml
+
+- name: Include completely-users tasks
+  import_tasks: completely-users.yaml

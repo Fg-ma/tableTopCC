@@ -1,0 +1,107 @@
+all:
+  hosts:
+    n1:
+      ansible_host: 10.5.0.100
+      ansible_connection: local
+      uplink_interface: enp42s0
+      network:
+        ceph_public: true
+        ceph_cluster: true
+        ceph_mgmt: true
+        mongos: true
+        mongo_shard: true
+        mongo_config: true
+      nftables:
+        tigervnc: true
+        postrouting: true
+        reset: true
+        ceph: true
+        mongos: false
+        mongo_shard: false
+        mongo_config: false
+        vault_server: true
+    tabletopnode1:
+      ansible_host: 10.5.0.101
+      uplink_interface: enp42s0
+      network:
+        ceph_public: true
+        ceph_cluster: true
+        ceph_mgmt: true
+        mongos: true
+        mongo_shard: true
+        mongo_config: true
+      nftables:
+        tigervnc: false
+        postrouting: false
+        reset: true
+        ceph: true
+        mongos: true
+        mongo_shard: true
+        mongo_config: true
+        vault_server: false
+    tabletopnode2:
+      ansible_host: 10.5.0.102
+      uplink_interface: enp42s0
+      network:
+        ceph_public: true
+        ceph_cluster: true
+        ceph_mgmt: true
+        mongos: true
+        mongo_shard: true
+        mongo_config: true
+      nftables:
+        tigervnc: false
+        postrouting: false
+        reset: true
+        ceph: true
+        mongos: true
+        mongo_shard: true
+        mongo_config: true
+        vault_server: false
+    tabletopnode3:
+      ansible_host: 10.5.0.103
+      uplink_interface: enp42s0
+      network:
+        ceph_public: true
+        ceph_cluster: true
+        ceph_mgmt: true
+        mongos: true
+        mongo_shard: true
+        mongo_config: true
+      nftables:
+        tigervnc: false
+        postrouting: false
+        reset: true
+        ceph: true
+        mongos: true
+        mongo_shard: true
+        mongo_config: true
+        vault_server: false
+
+  children:
+    physical:
+      hosts:
+        n1:
+
+    vms:
+      hosts:
+        tabletopnode1:
+        tabletopnode2:
+        tabletopnode3:
+
+    remove_physical:
+      hosts:
+        n1:
+
+    remove_vms:
+      hosts:
+        tabletopnode1:
+        tabletopnode2:
+        tabletopnode3:
+
+    nftables:
+      hosts:
+        n1:
+        # tableTopNode1:
+        # tableTopNode2:
+        # tableTopNode3:

@@ -1,0 +1,59 @@
+- name: Render mongos-vault-restart-script
+  template:
+    src: mongos-vault-restart-script.j2
+    dest: "/etc/apparmor.d/mongos-vault-restart-script"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reload AppArmor profile for mongos
+  command: apparmor_parser -r /etc/apparmor.d/mongos-vault-restart-script
+  become: true
+
+- name: Set enforce mode for mongos
+  command: aa-enforce mongos-vault-restart-script
+  become: true
+
+# Vault bin
+- name: Set vault apparmor profile name
+  set_fact:
+    vault_apparmor_profile_name: "{{ vault_dir | regex_replace('^/', '') | replace('/', '.') }}.bin.vault"
+
+- name: Ensure AppArmor rule exists for mongos-vault-restart.sh
+  lineinfile:
+    path: /etc/apparmor.d/{{ vault_apparmor_profile_name }}
+    line: "  {{ vault_dir }}/scripts/mongo/mongos/mongos-vault-restart.sh cx -> mongos-vault-restart-script,"
+    state: present
+    insertbefore: '^\}'
+    create: no
+  ignore_errors: true
+
+- name: Re-parse the AppArmor profile
+  command: apparmor_parser -r /etc/apparmor.d/{{ vault_apparmor_profile_name }}
+  ignore_errors: true
+
+- name: Re-enforce the profile
+  command: aa-enforce {{ vault_apparmor_profile_name }}
+  ignore_errors: true
+
+# Vault request bin
+- name: Set vault requests apparmor profile name
+  set_fact:
+    vault_requests_apparmor_profile_name: "{{ vault_dir | regex_replace('^/', '') | replace('/', '.') }}.bin.vault_requests"
+
+- name: Ensure AppArmor rule exists for mongos-approle-vault-server-request.conf
+  lineinfile:
+    path: /etc/apparmor.d/{{ vault_requests_apparmor_profile_name }}
+    line: "  {{ mongo_base_dir }}/conf/mongos-approle-vault-server-request.conf r,"
+    state: present
+    insertbefore: '^\}'
+    create: no
+  ignore_errors: true
+
+- name: Re-parse the AppArmor profile
+  command: apparmor_parser -r /etc/apparmor.d/{{ vault_requests_apparmor_profile_name }}
+  ignore_errors: true
+
+- name: Re-enforce the profile
+  command: aa-enforce {{ vault_requests_apparmor_profile_name }}
+  ignore_errors: true

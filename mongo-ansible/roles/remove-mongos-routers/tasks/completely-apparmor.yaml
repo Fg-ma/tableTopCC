@@ -1,0 +1,11 @@
+# Vault bin
+- name: Set vault apparmor profile name
+  set_fact:
+    vault_apparmor_profile_name: "{{ vault_dir | regex_replace('^/', '') | replace('/', '.') }}.bin.vault"
+
+- name: Remove AppArmor rule for Vault's Snowflake OCSP cache
+  lineinfile:
+    path: /etc/apparmor.d/{{ vault_apparmor_profile_name }}
+    line: "  /home/{{ mongo_vault_agent_user }}/.cache/snowflake/ocsp_response_cache.json rwk,"
+    state: absent
+  ignore_errors: true

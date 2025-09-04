@@ -1,0 +1,116 @@
+// Config server login
+sudo -u mongovaultagent /mnt/mongo/bin/mongosh "mongodb://10.60.0.101:27019,10.60.0.102:27019,10.60.0.103:27019/admin?authMechanism=MONGODB-X509&replicaSet=cfgRS1&tls=true&tlsCAFile=/mnt/vault/authorities/ca.pem&tlsCertificateKeyFile=/mnt/vault/secrets/mongo/config/mongo-config-10.60.0.101.pem"
+
+// Shard server login
+sudo -u mongovaultagent /mnt/mongo/bin/mongosh "mongodb://10.50.0.101:27020,10.50.0.102:27020,10.50.0.103:27020/admin?authMechanism=MONGODB-X509&replicaSet=shardRS1&tls=true&tlsCAFile=/mnt/vault/authorities/ca.pem&tlsCertificateKeyFile=/mnt/vault/secrets/mongo/shard/mongo-shard-10.50.0.101.pem"
+
+// Mongos server login
+sudo -u mongovaultagent /mnt/mongo/bin/mongosh --host 10.40.0.101 --port 27021 --tls --tlsCertificateKeyFile /mnt/vault/secrets/mongo/mongos/mongos-10.40.0.101.pem --tlsCAFile /mnt/vault/authorities/ca.pem --authenticationMechanism MONGODB-X509 --authenticationDatabase '$external'
+
+// Format new mongo node
+- Make xfs partition
+sudo apt update
+sudo apt install -y parted xfsprogs
+lsblk
+sudo parted /dev/sdb mklabel gpt
+sudo parted -a opt /dev/sdb mkpart primary xfs 0% 100%
+sudo mkfs.xfs /dev/sdb1
+lsblk -f
+sudo nano /etc/fstab
+UUID=1234-5678  /mnt/mongo  xfs  defaults  0  2
+
+// Force clean config server
+sudo rm -rf /etc/apparmor.d/mnt.vault.bin.vault
+sudo rm -rf /etc/apparmor.d/mnt.mongo.bin.mongod
+sudo rm -rf /etc/apparmor.d/mnt.mongo.bin.mongos
+sudo rm -rf /etc/apparmor.d/mnt.mongo.bin.mongosh
+
+sudo systemctl stop fetch-vault-mongo-config-approle-ids.service
+sudo systemctl disable fetch-vault-mongo-config-approle-ids.service
+sudo rm -rf /etc/systemd/system/fetch-vault-mongo-config-approle-ids.service
+sudo systemctl stop mongo-config-vault-agent.service
+sudo systemctl disable mongo-config-vault-agent.service
+sudo rm -rf /etc/systemd/system/mongo-config-vault-agent.service
+sudo rm -rf /etc/sudoers.d/vaultagent-mongo
+sudo pkill -f vault-agent
+sudo systemctl daemon-reload
+
+sudo systemctl stop mongod-configsvr.service
+sudo systemctl disable mongod-configsvr.service
+sudo pkill -f mongod.*configsvr
+sudo rm -rf /etc/systemd/system/mongod-configsvr.service
+sudo rm -rf -R /mnt/mongo/*
+sudo ls -l /mnt/mongo
+sudo systemctl daemon-reload
+
+sudo rm -rf /mnt/vault/certs/mongo/*
+
+sudo systemctl stop mongos.service
+sudo systemctl disable mongos.service
+pkill mongos
+sudo rm -rf /etc/systemd/system/mongos.service
+sudo rm -rf -R /mnt/mongo/mongos
+sudo ls -l /mnt/mongo
+sudo systemctl stop fetch-vault-mongos-approle-ids.service
+sudo systemctl disable fetch-vault-mongos-approle-ids.service
+sudo rm -rf /etc/systemd/system/fetch-vault-mongos-approle-ids.service
+sudo systemctl stop mongos-vault-agent.service
+sudo systemctl disable mongos-vault-agent.service
+sudo rm -rf /etc/systemd/system/mongos-vault-agent.service
+sudo systemctl daemon-reload
+
+sudo systemctl stop fetch-vault-mongo-shard-approle-ids.service
+sudo systemctl disable fetch-vault-mongo-shard-approle-ids.service
+sudo rm -rf /etc/systemd/system/fetch-vault-mongo-shard-approle-ids.service
+sudo systemctl stop mongo-shard-vault-agent.service
+sudo systemctl disable mongo-shard-vault-agent.service
+sudo rm -rf /etc/systemd/system/mongo-shard-vault-agent.service
+sudo systemctl stop mongod-shardsvr.service
+sudo systemctl disable mongod-shardsvr.service
+sudo pkill -f mongod.*shardsvr
+sudo rm -rf /etc/systemd/system/mongod-shardsvr.service
+sudo rm -rf -R /mnt/mongo/shard
+sudo ls -l /mnt/mongo
+sudo systemctl daemon-reload
+
+sudo journalctl --rotate
+sudo journalctl --vacuum-time=1s
+
+
+python3 -c 'import urllib.parse; print(urllib.parse.quote("my/secure:password", safe=""))'
+
+
+
+sudo apparmor_parser -r /etc/apparmor.d/mnt.mongo.bin.mongod
+sudo aa-enforce mnt.mongo.bin.mongod
+sudo systemctl restart mongod-configsvr
+sudo journalctl -e | grep DENIED
+
+
+sudo apparmor_parser -r /etc/apparmor.d/mnt.mongo.bin.mongod
+sudo aa-complain /mnt/mongo/bin/mongod
+sudo systemctl restart mongod-configsvr
+sudo journalctl -e | grep DENIED
+
+sudo apparmor_parser -r /etc/apparmor.d/mnt.mongo.bin.mongos
+sudo aa-enforce mnt.mongo.bin.mongos
+sudo systemctl restart mongos
+sudo journalctl -e | grep DENIED
+
+sudo apparmor_parser -r /etc/apparmor.d/mnt.vault.bin.vault
+sudo aa-enforce mnt.vault.bin.vault
+sudo systemctl restart mongo-config-vault-agent
+sudo journalctl -e | grep DENIED
+
+sudo apparmor_parser -r /etc/apparmor.d/mnt.vault.bin.vault_requests
+sudo aa-enforce mnt.vault.bin.vault_requests
+sudo journalctl -e | grep DENIED
+
+sudo apparmor_parser -r /etc/apparmor.d/mnt.mongo.bin.mongosh
+sudo aa-enforce mnt.mongo.bin.mongosh
+sudo journalctl -e | grep DENIED
+
+sudo cat /etc/apparmor.d/mnt.mongo.bin.mongod
+sudo cat /etc/apparmor.d/mnt.mongo.bin.mongos
+sudo cat /etc/apparmor.d/mnt.vault.bin.vault
+sudo cat /etc/apparmor.d/mnt.mongo.bin.mongosh

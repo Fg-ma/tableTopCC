@@ -1,0 +1,84 @@
+#!/usr/sbin/nft -f
+
+flush ruleset
+
+table inet filter {
+  # predefined chains
+  chain input {
+    type filter hook input priority 0; policy drop;
+    iif lo accept
+    ct state established,related accept
+
+    {% if nftables.tigervnc %}
+    ip saddr {{ tigervnc_ip }} tcp dport 22 ct state new accept
+
+    {% endif %}
+    {% if nftables.reset %}
+    # SSH
+    {% for s in [admin_subnet, ceph_public_subnet, ceph_cluster_subnet,
+                ceph_management_subnet, mongos_subnet,
+                mongo_shard_subnet, mongo_config_subnet] %}
+    ip saddr 10.{{ s }}.0.0/16 tcp dport 22 ct state new accept
+    {% endfor %}
+
+    {% endif %}
+    {% if nftables.ceph %}
+    # Ceph service ports
+    {% for s in [ceph_public_subnet, ceph_cluster_subnet, ceph_management_subnet] %}
+    ip saddr 10.{{ s }}.0.0/16 tcp dport { 9100, 6789, 3300, 3000 } accept
+    ip saddr 10.{{ s }}.0.0/16 tcp dport 6800-7300 accept
+    {% endfor %}
+
+    {% endif %}
+    {% if nftables.mongos %}
+    # Mongo
+    ip saddr 10.{{ mongos_subnet }}.0.0/16 tcp dport { 27019, 27020, 27021 } accept
+
+    {% endif %}
+    {% if nftables.mongo_config %}
+    # Mongo config
+    ip saddr 10.{{ mongo_config_subnet }}.0.0/16 tcp dport { 27019, 27020, 27021 } accept
+
+    {% endif %}
+    {% if nftables.mongo_shard %}
+    # Mongo shard
+    ip saddr 10.{{ mongo_shard_subnet }}.0.0/16 tcp dport { 27019, 27020, 27021 } accept
+
+    {% endif %} 
+    {% if nftables.vault_server %}
+    # Vault-server SSH port
+    {% for s in [admin_subnet, ceph_public_subnet, ceph_cluster_subnet,
+                ceph_management_subnet, mongos_subnet,
+                mongo_shard_subnet, mongo_config_subnet] %}
+    ip saddr 10.{{ s }}.0.0/16 tcp dport { 2223, 8200 } ct state new accept
+    {% endfor %}
+    {% endif %} 
+  }
+
+  chain forward {
+    type filter hook forward priority 0; policy {% if nftables.postrouting %}accept{% else %}drop{% endif %};
+  }
+
+  chain output {
+    type filter hook output priority 0; policy accept;
+  }
+}
+
+{% if nftables.postrouting %}
+table ip nat {
+	chain prerouting {
+		type nat hook prerouting priority dstnat; policy accept;
+	}
+
+  chain postrouting {
+    type nat hook postrouting priority srcnat; policy accept;
+        
+    # NAT for all lab subnets out {{ network_interface }}
+    {% for s in [admin_subnet, ceph_public_subnet, ceph_cluster_subnet,
+                ceph_management_subnet, mongos_subnet,
+                mongo_shard_subnet, mongo_config_subnet] %}
+    ip saddr 10.{{ s }}.0.0/16 oifname "{{ network_interface }}" masquerade
+    {% endfor %}
+  }
+}
+{% endif %} 

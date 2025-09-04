@@ -1,0 +1,44 @@
+- name: Install nftables
+  ansible.builtin.package:
+    name: nftables
+    state: present
+
+- name: Render nftables config
+  template:
+    src: "nftables.conf.j2"
+    dest: "/etc/nftables.conf"
+    mode: "0644"
+
+- name: Replace nftables service unit to avoid dependency loops
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/nftables.service
+    content: |
+      [Unit]
+      Description=nftables
+      Documentation=man:nft(8) http://wiki.nftables.org
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/sbin/nft -f /etc/nftables.conf
+      ExecReload=/usr/sbin/nft -f /etc/nftables.conf
+      ExecStop=/usr/sbin/nft flush ruleset
+      StandardInput=null
+      ProtectSystem=full
+      ProtectHome=true
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: "0644"
+
+- name: Reload systemd
+  command: systemctl daemon-reload
+  become: true
+
+- name: Ensure nftables service is enabled
+  service:
+    name: nftables
+    enabled: true
+    state: restarted

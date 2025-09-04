@@ -1,0 +1,20 @@
+profile mongo-config-vault-restart-script {
+  {{ vault_dir }}/scripts/mongo/config/mongo-config-vault-restart.sh r,
+
+  # Allow bash to run the script
+  /bin/bash ix,
+
+  # Allow systemctl and grep
+  /bin/systemctl rix,
+  /bin/grep rix,
+
+  # Allow read access to /proc and /run for systemctl
+  /proc/*/cmdline r,
+  /proc/*/status r,
+  /proc/*/stat r,
+  /proc/*/comm r,
+  /proc/*/fd/ r,
+  /proc/*/fd/** r,
+
+  /run/systemd/** r,
+}

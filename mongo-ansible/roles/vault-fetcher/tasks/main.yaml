@@ -1,0 +1,10 @@
+- name: Fetch {{ fetcher_secret_path }} from Vault using a token
+  set_fact:
+    "{{ fetcher_secret_var_name }}": >-
+      {{
+        lookup(
+          'community.hashi_vault.hashi_vault',
+          'secret={{ fetcher_secret_path }} token={{ fetcher_vault_token }} url={{ fetcher_vault_url }} cacert={{ fetcher_ca_path }} engine_version={{ fetcher_engine_version }}'
+        )
+      }}
+  no_log: true

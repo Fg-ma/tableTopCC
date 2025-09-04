@@ -1,0 +1,13 @@
+source /etc/network/interfaces.d/*
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# Admin
+auto enp1s0
+iface enp1s0 inet static
+	address 10.{{ admin_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+	netmask 255.255.0.0
+	gateway {{ associated_physical_machine_admin_network }}
+	dns-nameserver 8.8.8.8 8.8.4.4

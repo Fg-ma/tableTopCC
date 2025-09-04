@@ -1,0 +1,16 @@
+- name: Check if mongos log exists
+  ansible.builtin.stat:
+    path: "{{ mongo_base_dir }}/mongos/logs/mongos.log"
+  register: mongos_log_exists
+
+- name: Truncate mongos log safely
+  ansible.builtin.command: truncate -s 0 {{ mongo_base_dir }}/mongos/logs/mongos.log
+  become: true
+  when: mongos_log_exists.stat.exists
+  tags: truncate
+
+- name: Restart mongos service
+  ansible.builtin.systemd:
+    name: mongos.service
+    state: restarted
+  become: true

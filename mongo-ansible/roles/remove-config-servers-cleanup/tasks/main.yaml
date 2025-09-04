@@ -1,0 +1,45 @@
+- name: Stop mongod-configsvr service
+  ansible.builtin.systemd:
+    name: mongod-configsvr.service
+    state: stopped
+    enabled: no
+  ignore_errors: true
+  become: true
+
+- name: Kill mongod process (ignoring failure if not running)
+  command: |
+    pkill -F "{{ mongo_base_dir }}/config/logs/mongod.pid"
+  ignore_errors: true
+  become: true
+
+- name: Remove mongod-configsvr systemd service file
+  ansible.builtin.file:
+    path: /etc/systemd/system/mongod-configsvr.service
+    state: absent
+  become: true
+
+- name: Remove {{ mongo_base_dir }}/config
+  command: rm -rf "{{ mongo_base_dir }}/config"
+  ignore_errors: true
+  become: true
+
+- name: Include vault tasks
+  import_tasks: vault.yaml
+
+- name: Check if shard directory exists
+  stat:
+    path: "{{ mongo_base_dir }}/shard"
+  register: shard_dir
+
+- name: Check if mongos directory exists
+  stat:
+    path: "{{ mongo_base_dir }}/mongos"
+  register: mongos_dir
+
+- name: Include apparmor tasks
+  import_tasks: apparmor.yaml
+  when: not shard_dir.stat.exists
+
+- name: Include completely tasks
+  import_tasks: completely.yaml
+  when: not shard_dir.stat.exists and not mongos_dir.stat.exists

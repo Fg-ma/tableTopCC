@@ -1,0 +1,9 @@
+- name: Init virtual machine networking
+  hosts: vms
+  become: true
+  vars_files:
+    - ../vars/share.yaml
+    - ../vars/vm.yaml
+  roles:
+    - role: nftables
+    - role: init-networking-vm

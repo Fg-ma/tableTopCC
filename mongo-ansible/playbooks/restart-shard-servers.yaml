@@ -1,0 +1,7 @@
+- name: Restart Shard Servers
+  hosts: shard_servers
+  become: true
+  vars_files:
+    - ../vars/share.yaml
+  roles:
+    - role: restart-shard-servers

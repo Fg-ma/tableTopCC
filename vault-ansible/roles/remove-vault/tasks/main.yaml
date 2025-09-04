@@ -1,0 +1,11 @@
+- name: Include apt tasks
+  import_tasks: apt.yaml
+
+- name: Include users tasks
+  import_tasks: users.yaml
+
+- name: Include dirs tasks
+  import_tasks: dirs.yaml
+
+- name: Include apparmor tasks
+  import_tasks: apparmor.yaml

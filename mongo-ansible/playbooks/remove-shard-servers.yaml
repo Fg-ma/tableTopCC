@@ -1,0 +1,25 @@
+- name: Set up Shard Servers - Remove from replica
+  hosts: tableTopNode1
+  become: true
+  run_once: true
+  vars_prompt:
+    - name: vault_token
+      prompt: "Enter Vault access token"
+      private: true
+  vars_files:
+    - ../vars/share.yaml
+  roles:
+    - role: remove-shard-servers-from-replica
+
+- name: Set up Shard Servers - Clean up
+  hosts: remove_shard_servers
+  become: true
+  run_once: true
+  vars_prompt:
+    - name: vault_token
+      prompt: "Enter Vault access token"
+      private: true
+  vars_files:
+    - ../vars/share.yaml
+  roles:
+    - role: remove-shard-servers-cleanup

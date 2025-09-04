@@ -1,0 +1,20 @@
+network_interface: enp42s0
+admin_bridge: br-admin
+ceph_public_bridge: br-ceph-public
+ceph_cluster_bridge: br-ceph-cluster
+ceph_management_bridge: br-ceph-mgmt
+mongos_bridge: br-mongos
+mongo_shard_bridge: br-mongo-shard
+mongo_config_bridge: br-mongo-config
+
+# Subnets
+admin_subnet: 5
+ceph_public_subnet: 10
+ceph_cluster_subnet: 20
+ceph_management_subnet: 30
+mongos_subnet: 40
+mongo_shard_subnet: 50
+mongo_config_subnet: 60
+
+# Tiger vnc
+tigervnc_ip: 10.136.29.101

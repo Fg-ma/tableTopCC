@@ -1,0 +1,28 @@
+- name: Create x.509 users in $external for mongos users
+  shell: >
+    {{ mongo_base_dir }}/bin/mongosh "mongodb://{{ primary_config_node }}:{{ config_port }}/?authMechanism=MONGODB-X509&replicaSet={{ config_repl_set_name }}&tls=true&tlsCAFile={{ vault_dir }}/authorities/ca.pem&tlsCertificateKeyFile={{ vault_dir }}/secrets/mongo/config/mongo-config-10.{{ mongo_config_subnet }}.0.{{ primary_config_node.split('.')[-1] }}.pem&directConnection=true"
+    --eval '
+      db = db.getSiblingDB("$external");
+
+      // Internal cluster cert user
+      if (!db.getUser("CN={{ item }}.mongo.mongos,OU={{ mongos_cert_ou }},O={{ cert_organization }},L={{ cert_locality }},ST={{ cert_state }},C={{ cert_country }}")) {
+        db.createUser({
+          user: "CN={{ item }}.mongo.mongos,OU={{ mongos_cert_ou }},O={{ cert_organization }},L={{ cert_locality }},ST={{ cert_state }},C={{ cert_country }}",
+          roles: [
+            { role: "__system", db: "admin" },
+            { role: "clusterMonitor", db: "admin" },
+            { role: "readWriteAnyDatabase", db: "admin" },
+            { role: "clusterManager", db: "admin" }
+          ],
+          mechanisms: ["MONGODB-X509"]
+        });
+      }
+    '
+  loop: "{{ groups['mongos_routers'] }}"
+  loop_control:
+    label: "10.{{ mongo_mongos_subnet }}.0.{{ hostvars[item]['ansible_host'].split('.')[-1] }}"
+  run_once: true
+  delegate_to: "{{ primary_config_node }}"
+  become: true
+  become_user: "{{ mongo_vault_agent_user }}"
+  no_log: true

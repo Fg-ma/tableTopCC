@@ -1,0 +1,24 @@
+- name: Remove {{ vault_dir }}/secrets/mongo directory
+  file:
+    path: "{{ vault_dir }}/secrets/mongo"
+    state: absent
+
+- name: Remove {{ vault_dir }}/scripts/mongo directory
+  file:
+    path: "{{ vault_dir }}/scripts/mongo"
+    state: absent
+
+- name: Remove {{ vault_dir }}/templates/mongo directory
+  file:
+    path: "{{ vault_dir }}/templates/mongo"
+    state: absent
+
+- name: Remove {{ vault_dir }}/agents/mongo directory
+  file:
+    path: "{{ vault_dir }}/agents/mongo"
+    state: absent
+
+- name: Remove {{ vault_dir }}/certs/mongo directory
+  file:
+    path: "{{ vault_dir }}/certs/mongo"
+    state: absent

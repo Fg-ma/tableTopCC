@@ -1,0 +1,89 @@
+source /etc/network/interfaces.d/*
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# School network interface
+auto enp42s0
+iface enp42s0 inet dhcp
+
+# Admin Bridge
+auto {{ admin_bridge }}
+iface {{ admin_bridge }} inet dhcp
+    address 10.{{ admin_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+    netmask 255.255.0.0
+    bridge_ports none
+    bridge_stp off
+    bridge_fd 0
+    bridge_maxwait 0
+    
+{% if network.ceph_public %}
+# Ceph Public Bridge
+auto {{ ceph_public_bridge }}
+iface {{ ceph_public_bridge }} inet static
+    address 10.{{ ceph_public_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+    netmask 255.255.0.0
+    bridge_ports none
+    bridge_stp off
+    bridge_fd 0
+    bridge_maxwait 0
+    
+{% endif %}
+{% if network.ceph_cluster %}
+# Ceph Cluster Bridge
+auto {{ ceph_cluster_bridge }}
+iface {{ ceph_cluster_bridge }} inet static
+    address 10.{{ ceph_cluster_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+    netmask 255.255.0.0
+    bridge_ports none
+    bridge_stp off
+    bridge_fd 0
+    bridge_maxwait 0
+
+{% endif %}
+{% if network.ceph_mgmt %}
+# Ceph Management Bridge
+auto {{ ceph_management_bridge }}
+iface {{ ceph_management_bridge }} inet static
+    address 10.{{ ceph_management_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+    netmask 255.255.0.0
+    bridge_ports none
+    bridge_stp off
+    bridge_fd 0
+    bridge_maxwait 0
+
+{% endif %}
+{% if network.mongos %}
+# Mongo Mongos Bridge
+auto {{ mongos_bridge }}
+iface {{ mongos_bridge }} inet static
+    address 10.{{ mongos_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+    netmask 255.255.0.0
+    bridge_ports none
+    bridge_stp off
+    bridge_fd 0
+    
+{% endif %}
+{% if network.mongo_shard %}
+# Mongo Shard Bridge
+auto {{ mongo_shard_bridge }}
+iface {{ mongo_shard_bridge }} inet static
+    address 10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+    netmask 255.255.0.0
+    bridge_ports none
+    bridge_stp off
+    bridge_fd 0
+    
+{% endif %}
+{% if network.mongo_config %}
+# Mongo Config Bridge
+auto {{ mongo_config_bridge }}
+iface {{ mongo_config_bridge }} inet static
+    address 10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+    netmask 255.255.0.0
+    bridge_ports none
+    bridge_stp off
+    bridge_fd 0
+
+{% endif %}

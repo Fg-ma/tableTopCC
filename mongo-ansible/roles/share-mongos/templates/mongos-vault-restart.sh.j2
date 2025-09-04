@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Restart Mongos services
+for svc in mongos; do
+  systemctl list-units --full -all "$svc.service" | grep -Fq loaded && systemctl restart "$svc"
+done

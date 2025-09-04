@@ -1,0 +1,20 @@
+- name: Ensure vault agent user is removed
+  user:
+    name: "{{ vault_agent_user }}"
+    state: absent
+    remove: yes
+
+- name: Remove vault agent group
+  group:
+    name: "{{ vault_agent_group }}"
+    state: absent
+
+- name: Remove vault agent navigational group
+  group:
+    name: "{{ vault_agent_navigational_group }}"
+    state: absent
+
+- name: Remove vault agent authorities group
+  group:
+    name: "{{ vault_agent_authorities_group }}"
+    state: absent

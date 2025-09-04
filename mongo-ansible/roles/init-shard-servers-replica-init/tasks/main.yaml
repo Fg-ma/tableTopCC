@@ -1,0 +1,78 @@
+- name: Wait for all shard-server members to be reachable
+  wait_for:
+    host: "10.{{ mongo_shard_subnet }}.0.{{ hostvars[item].ansible_host.split('.')[-1] }}"
+    port: "{{ shard_port }}"
+    timeout: 120
+    delay: 5
+    state: started
+  loop: "{{ groups['shard_servers'] }}"
+  ignore_errors: true
+
+- name: Initiate replica set
+  shell: >
+    {{ mongo_base_dir }}/bin/mongosh "mongodb://{{ primary_shard_node }}:{{ shard_port }}/?tls=true&tlsCAFile={{ vault_dir }}/authorities/ca.pem&tlsCertificateKeyFile={{ vault_dir }}/secrets/mongo/shard/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.pem&directConnection=true"
+    --eval 'rs.initiate({ _id: "{{ shard_repl_set_name }}", members: [ { _id: 0, host: "{{ primary_shard_node }}:{{ shard_port }}", priority: 2 } ] })'
+  run_once: true
+  register: rs_initiate_result
+  failed_when: rs_initiate_result.rc != 0 and '"already initialized"' not in rs_initiate_result.stderr
+  become: true
+
+- name: Wait for primary election
+  shell: >
+    {{ mongo_base_dir }}/bin/mongosh "mongodb://{{ primary_shard_node }}:{{ shard_port }}/?tls=true&tlsCAFile={{ vault_dir }}/authorities/ca.pem&tlsCertificateKeyFile={{ vault_dir }}/secrets/mongo/shard/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.pem&directConnection=true"
+    --quiet --eval 'while(rs.status().myState != 1) { sleep(1000); }'
+  run_once: true
+  become: true
+
+- name: Build shard_members list (skip primary)
+  vars:
+    ip: "10.{{ mongo_shard_subnet }}.0.{{ hostvars[server]['ansible_host'].split('.')[-1] }}"
+  set_fact:
+    shard_members: "{{ shard_members | default([]) + [ {'name': server, 'ip': ip} ] }}"
+  loop: "{{ groups['shard_servers'] }}"
+  loop_control:
+    loop_var: server
+  when: ip != primary_shard_node
+  run_once: true
+  delegate_to: localhost
+
+- name: Add other members to the replica set (idempotent, loop over shard_members)
+  shell: >
+    {{ mongo_base_dir }}/bin/mongosh "mongodb://{{ primary_shard_node }}:{{ shard_port }}/?replicaSet={{ shard_repl_set_name }}&tls=true&tlsCAFile={{ vault_dir }}/authorities/ca.pem&tlsCertificateKeyFile={{ vault_dir }}/secrets/mongo/shard/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ primary_shard_node.split('.')[-1] }}.pem&directConnection=true"
+    --eval 'if (!rs.conf().members.some(m => m.host == "{{ item.ip }}:{{ shard_port }}")) {
+             rs.add({ host: "{{ item.ip }}:{{ shard_port }}", priority: 1 });
+             print("rs.add -> {{ item.ip }}");
+           } else {
+             print("skip (exists) -> {{ item.ip }}");
+           }'
+  loop: "{{ shard_members }}"
+  run_once: true
+  delegate_to: "{{ primary_shard_node }}"
+  become: true
+  become_user: "{{ mongo_vault_agent_user }}"
+
+- name: Disable Mongo telemetry
+  shell: >
+    {{ mongo_base_dir }}/bin/mongosh "mongodb://{{ primary_shard_node }}:{{ shard_port }}/?replicaSet={{ shard_repl_set_name }}&tls=true&tlsCAFile={{ vault_dir }}/authorities/ca.pem&tlsCertificateKeyFile={{ vault_dir }}/secrets/mongo/shard/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.pem&directConnection=true"
+    --eval 'disableTelemetry()'
+  run_once: true
+  become: true
+
+- name: Include vault_fetcher role
+  include_role:
+    name: vault-fetcher
+  vars:
+    fetcher_secret_var_name: "mongo_admin"
+    fetcher_secret_path: "{{ mongo_admin_secret_path }}"
+    fetcher_vault_token: "{{ vault_token }}"
+    fetcher_vault_url: "{{ vault_url }}"
+    fetcher_ca_path: "{{ local_ca_path }}"
+    fetcher_engine_version: 2
+
+- name: Create admin user
+  shell: >
+    {{ mongo_base_dir }}/bin/mongosh "mongodb://{{ primary_shard_node }}:{{ shard_port }}/?replicaSet={{ shard_repl_set_name }}&tls=true&tlsCAFile={{ vault_dir }}/authorities/ca.pem&tlsCertificateKeyFile={{ vault_dir }}/secrets/mongo/shard/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.pem&directConnection=true"
+    --eval 'db.getSiblingDB("admin").createUser({ user: "admin", pwd: "{{ mongo_admin.password }}", roles: [ { role: "root", db: "admin" } ] })'
+  run_once: true
+  become: true
+  no_log: true

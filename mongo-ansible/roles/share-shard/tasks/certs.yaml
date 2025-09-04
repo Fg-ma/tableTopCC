@@ -1,0 +1,61 @@
+- name: Check if mongo shard role exists
+  community.hashi_vault.vault_read:
+    url: "{{ vault_url }}"
+    token: "{{ vault_token }}"
+    path: "pki/roles/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+  register: mongo_shard_role
+  environment:
+    REQUESTS_CA_BUNDLE: "{{ local_ca_path }}"
+  delegate_to: localhost
+  ignore_errors: true
+
+- name: Define PKI role for mongo certs
+  community.hashi_vault.vault_write:
+    url: "{{ vault_url }}"
+    token: "{{ vault_token }}"
+    mount_point: "pki"
+    path: "pki/roles/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+    data:
+      name: "mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+      allowed_domains:
+        - "{{ inventory_hostname | lower }}"
+        - "{{ inventory_hostname }}.mongo.shard"
+        - "10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+      key_type: "rsa"
+      key_bits: 4096
+      country:
+        - "{{ cert_country }}"
+      province:
+        - "{{ cert_state }}"
+      locality:
+        - "{{ cert_locality }}"
+      organization:
+        - "{{ cert_organization }}"
+      ou:
+        - "{{ shard_cert_ou }}"
+      common_name: "{{ inventory_hostname }}.mongo.shard"
+      exclude_cn_from_sans: true
+      allow_bare_domains: true
+      alt_names:
+        - "{{ inventory_hostname | lower }}"
+        - "{{ inventory_hostname }}.mongo.shard"
+      ip_sans:
+        - "10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}"
+      allow_ip_sans: true
+      allow_localhost: false
+      server_flag: true
+      client_flag: true
+      key_usage:
+        - DigitalSignature
+        - KeyEncipherment
+      ext_key_usage:
+        - server_auth
+        - client_auth
+      ttl: "12h"
+      max_ttl: "12h"
+      renew_before: "1h"
+  environment:
+    REQUESTS_CA_BUNDLE: "{{ local_ca_path }}"
+  delegate_to: localhost
+  when: mongo_shard_role.failed or mongo_shard_role.data is not defined
+  no_log: true

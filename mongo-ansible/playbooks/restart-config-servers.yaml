@@ -1,0 +1,7 @@
+- name: Restart Config Servers
+  hosts: config_servers
+  become: true
+  vars_files:
+    - ../vars/share.yaml
+  roles:
+    - role: restart-config-servers

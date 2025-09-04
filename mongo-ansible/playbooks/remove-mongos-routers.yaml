@@ -1,0 +1,11 @@
+- name: Remove Mongos routers
+  hosts: remove_mongos_routers
+  become: true
+  vars_prompt:
+    - name: vault_token
+      prompt: "Enter Vault access token"
+      private: true
+  vars_files:
+    - ../vars/share.yaml
+  roles:
+    - role: remove-mongos-routers

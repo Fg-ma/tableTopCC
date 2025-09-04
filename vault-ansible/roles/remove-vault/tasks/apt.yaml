@@ -1,0 +1,6 @@
+- name: Ensure jq is purged
+  apt:
+    name: jq
+    state: absent
+    purge: yes
+  become: true

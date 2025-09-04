@@ -1,0 +1,3 @@
+source ~/.venvs/ansible-vault/bin/activate
+ansible-playbook playbooks/init-networking-physical.yaml
+ansible-playbook playbooks/nftables.yaml

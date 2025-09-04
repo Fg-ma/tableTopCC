@@ -1,0 +1,22 @@
+- name: Include apt tasks
+  import_tasks: apt.yaml
+
+- name: Set mongos apparmor profile name
+  set_fact:
+    mongos_apparmor_profile_name: "{{ mongo_base_dir | regex_replace('^/', '') | replace('/', '.') }}.bin.mongos"
+
+- name: Render {{ mongos_apparmor_profile_name }}
+  template:
+    src: mongos.j2
+    dest: "/etc/apparmor.d/{{ mongos_apparmor_profile_name }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reload AppArmor profile for mongos
+  command: apparmor_parser -r /etc/apparmor.d/{{ mongos_apparmor_profile_name }}
+  become: true
+
+- name: Set enforce mode for mongos
+  command: aa-enforce {{ mongos_apparmor_profile_name }}
+  become: true

@@ -1,0 +1,9 @@
+- name: Remove virtual machine networking
+  hosts: remove_vms
+  become: true
+  vars_files:
+    - ../vars/share.yaml
+    - ../vars/vm.yaml
+  roles:
+    - role: remove-nftables
+    - role: remove-networking-vm

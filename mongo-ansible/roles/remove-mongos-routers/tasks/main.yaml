@@ -1,0 +1,49 @@
+- name: Stop mongos service
+  ansible.builtin.systemd:
+    name: mongos.service
+    state: stopped
+    enabled: no
+  become: true
+
+- name: Kill mongos process (ignoring failure if not running)
+  command: |
+    pkill -F "{{ mongo_base_dir }}/mongos/logs/mongos.pid"
+  ignore_errors: true
+  become: true
+
+- name: Remove mongos systemd service file
+  ansible.builtin.file:
+    path: /etc/systemd/system/mongos.service
+    state: absent
+  become: true
+
+- name: Remove all contents of {{ mongo_base_dir }}/mongos
+  command: rm -rf "{{ mongo_base_dir }}/mongos"
+  ignore_errors: true
+  become: true
+
+- name: Remove {{ mongo_base_dir }}/bin/mongos
+  file:
+    path: "{{ mongo_base_dir }}/bin/mongos"
+    state: absent
+  become: true
+
+- name: Include vault tasks
+  import_tasks: vault.yaml
+
+- name: Check if shard directory exists
+  stat:
+    path: "{{ mongo_base_dir }}/shard"
+  register: shard_dir
+
+- name: Check if config directory exists
+  stat:
+    path: "{{ mongo_base_dir }}/config"
+  register: config_dir
+
+- name: Include apparmor tasks
+  import_tasks: apparmor.yaml
+
+- name: Include completely tasks
+  import_tasks: completely.yaml
+  when: not shard_dir.stat.exists and not config_dir.stat.exists

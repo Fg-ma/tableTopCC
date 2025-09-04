@@ -1,0 +1,9 @@
+- name: Init physical machine networking
+  hosts: physical
+  become: true
+  vars_files:
+    - ../vars/share.yaml
+    - ../vars/physical.yaml
+  roles:
+    - role: nftables
+    - role: init-networking-physical

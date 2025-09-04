@@ -1,0 +1,35 @@
+- name: Render interfaces file
+  template:
+    src: interfaces.j2
+    dest: "/etc/network/interfaces"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+
+- name: Render hosts file
+  template:
+    src: hosts.j2
+    dest: "/etc/hosts"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+
+- name: Set DNS servers in resolv.conf
+  copy:
+    content: |
+      nameserver 8.8.8.8
+      nameserver 8.8.4.4
+    dest: /etc/resolv.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Ensure enp1s0 is up
+  command: ip link set enp1s0 up
+  become: true
+
+- name: Ensure systemd-networkd is enabled, started, and restarted
+  ansible.builtin.systemd:
+    name: systemd-networkd
+    enabled: yes
+    state: restarted

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Restart mongod-shardsvr service
+if systemctl list-units --full --all mongod-shardsvr.service | grep -Fq loaded; then
+  systemctl restart mongod-shardsvr
+fi

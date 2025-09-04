@@ -1,0 +1,42 @@
+- name: Include apt tasks
+  import_tasks: apt.yaml
+
+- name: Set vault apparmor profile name
+  set_fact:
+    vault_apparmor_profile_name: "{{ vault_dir | regex_replace('^/', '') | replace('/', '.') }}.bin.vault"
+
+- name: Render {{ vault_apparmor_profile_name }}
+  template:
+    src: vault.j2
+    dest: "/etc/apparmor.d/{{ vault_apparmor_profile_name }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reload AppArmor profile for vault
+  command: apparmor_parser -r /etc/apparmor.d/{{ vault_apparmor_profile_name }}
+  become: true
+
+- name: Set enforce mode for vault
+  command: aa-enforce {{ vault_apparmor_profile_name }}
+  become: true
+
+- name: Set vault apparmor profile name
+  set_fact:
+    vault_requests_apparmor_profile_name: "{{ vault_dir | regex_replace('^/', '') | replace('/', '.') }}.bin.vault_requests"
+
+- name: Render {{ vault_requests_apparmor_profile_name }}
+  template:
+    src: vault_requests.j2
+    dest: "/etc/apparmor.d/{{ vault_requests_apparmor_profile_name }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reload AppArmor profile for vault
+  command: apparmor_parser -r /etc/apparmor.d/{{ vault_requests_apparmor_profile_name }}
+  become: true
+
+- name: Set enforce mode for vault
+  command: aa-enforce {{ vault_requests_apparmor_profile_name }}
+  become: true

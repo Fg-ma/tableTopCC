@@ -1,0 +1,26 @@
+127.0.0.1       localhost
+127.0.0.1       {{ inventory_hostname }}
+10.{{ admin_subnet }}.0.{{ ansible_host.split('.')[-1] }}      {{ inventory_hostname }}.admin
+{% if network.ceph_public %}
+10.{{ ceph_public_subnet }}.0.{{ ansible_host.split('.')[-1] }}     {{ inventory_hostname }}.ceph.public
+{% endif %} 
+{% if network.ceph_cluster %}
+10.{{ ceph_cluster_subnet }}.0.{{ ansible_host.split('.')[-1] }}     {{ inventory_hostname }}.ceph.cluster
+{% endif %}
+{% if network.ceph_mgmt %}
+10.{{ ceph_management_subnet }}.0.{{ ansible_host.split('.')[-1] }}     {{ inventory_hostname }}.ceph.management
+{% endif %}
+{% if network.mongos %}
+10.{{ mongos_subnet }}.0.{{ ansible_host.split('.')[-1] }}     {{ inventory_hostname }}.mongo.mongos
+{% endif %}
+{% if network.mongo_shard %}
+10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}     {{ inventory_hostname }}.mongo.shard
+{% endif %}
+{% if network.mongo_config %}
+10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}     {{ inventory_hostname }}.mongo.config
+{% endif %}
+
+# The following lines are desirable for IPv6 capable hosts
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters

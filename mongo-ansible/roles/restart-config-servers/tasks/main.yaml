@@ -1,0 +1,16 @@
+- name: Check if mongod log exists
+  ansible.builtin.stat:
+    path: "{{ mongo_base_dir }}/config/logs/mongod.log"
+  register: mongod_log_exists
+
+- name: Truncate mongod log safely
+  ansible.builtin.command: truncate -s 0 {{ mongo_base_dir }}/config/logs/mongod.log
+  become: true
+  when: mongod_log_exists.stat.exists
+  tags: truncate
+
+- name: Restart mongod-configsvr service
+  ansible.builtin.systemd:
+    name: mongod-configsvr.service
+    state: restarted
+  become: true

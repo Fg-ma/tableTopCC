@@ -1,0 +1,62 @@
+source /etc/network/interfaces.d/*
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# Admin
+auto enp1s0
+iface enp1s0 inet static
+	address 10.{{ admin_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+	netmask 255.255.0.0
+	gateway {{ associated_physical_machine_admin_network }}
+	dns-nameserver 8.8.8.8 8.8.4.4
+
+{% if network.ceph_public %}
+# Ceph Public
+auto enp7s0
+iface enp7s0 inet static
+	address 10.{{ ceph_public_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+	netmask 255.255.0.0
+	
+{% endif %}
+{% if network.ceph_cluster %}
+# Ceph Cluster
+auto enp8s0
+iface enp8s0 inet static
+	address 10.{{ ceph_cluster_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+	netmask 255.255.0.0
+
+{% endif %}
+{% if network.ceph_mgmt %}
+# Ceph Management
+auto enp9s0
+iface enp9s0 inet static
+	address 10.{{ ceph_management_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+	netmask 255.255.0.0
+
+{% endif %}
+{% if network.mongos %}
+# Mongo Mongos
+auto enp10s0
+iface enp10s0 inet static
+	address 10.{{ mongos_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+	netmask 255.255.0.0
+
+{% endif %}
+{% if network.mongo_shard %}
+# Mongo Shard
+auto enp11s0
+iface enp11s0 inet static
+	address 10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+	netmask 255.255.0.0
+
+{% endif %}
+{% if network.mongo_config %}
+# Mongo Config
+auto enp12s0
+iface enp12s0 inet static
+	address 10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+	netmask 255.255.0.0
+
+{% endif %}

@@ -1,0 +1,7 @@
+- name: Restart Mongos routers
+  hosts: mongos_routers
+  become: true
+  vars_files:
+    - ../vars/share.yaml
+  roles:
+    - role: restart-mongos-routers

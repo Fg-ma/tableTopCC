@@ -1,0 +1,13 @@
+- name: Render ufw-reset script
+  template:
+    src: "{{ playbook_dir }}/../ufw/ufw-reset.sh.j2"
+    dest: "/tmp/ufw-reset.sh"
+    mode: "0755"
+
+- name: Execute ufw-reset script
+  command: "/tmp/ufw-reset.sh"
+
+- name: Remove ufw-reset script
+  file:
+    path: "/tmp/ufw-reset.sh"
+    state: absent

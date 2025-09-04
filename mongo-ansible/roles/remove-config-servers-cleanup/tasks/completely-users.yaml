@@ -1,0 +1,21 @@
+- name: Delete mongo certs user
+  user:
+    name: "{{ mongo_certs_user }}"
+    state: absent
+    remove: yes
+
+- name: Delete mongo certs group
+  group:
+    name: "{{ mongo_certs_group }}"
+    state: absent
+
+- name: Delete mongo vault agent user
+  user:
+    name: "{{ mongo_vault_agent_user }}"
+    state: absent
+    remove: yes
+
+- name: Delete mongo vault agent group
+  group:
+    name: "{{ mongo_vault_agent_group }}"
+    state: absent

@@ -1,0 +1,65 @@
+#include <tunables/global>
+
+/mnt/vault/bin/vault_requests {
+  # Allow read access to certs/keys
+  {{ vault_dir }}/certs/** r,
+  {{ vault_dir }}/authorities/* r,
+
+  # Allow DNS resolution and TCP connections
+  network inet stream,
+  network inet6 stream,
+  capability net_bind_service,
+
+  # Capabilities
+  capability dac_override,
+  capability dac_read_search,
+
+  # Allow execution and read-only access to vault_requests binary itself
+  {{ vault_dir }}/bin/vault_requests rix,
+
+  # Allow shared libraries
+  /lib/x86_64-linux-gnu/libssl.so.*              mr,
+  /lib/x86_64-linux-gnu/libcrypto.so.*           mr,
+  /lib/x86_64-linux-gnu/libstdc++.so.*           mr,
+  /lib/x86_64-linux-gnu/libgcc_s.so.*            mr,
+  /lib/x86_64-linux-gnu/libc.so.*                mr,
+  /lib/x86_64-linux-gnu/libm.so.*                mr,
+  /lib64/ld-linux-x86-64.so.*                    mr,
+  /lib/x86_64-linux-gnu/libboost_system.so.*     mr,
+  /lib/x86_64-linux-gnu/libboost_thread.so.*     mr,
+  /lib/x86_64-linux-gnu/libboost_atomic.so.*     mr,
+  /lib/x86_64-linux-gnu/libsodium.so.*           mr,
+  /lib/x86_64-linux-gnu/libyaml-cpp.so.*         mr,
+  /lib/x86_64-linux-gnu/libz.so.*                mr,
+  /lib/x86_64-linux-gnu/libzstd.so.*             mr,
+  /usr/lib/x86_64-linux-gnu/libssl.so.*          mr,
+  /usr/lib/x86_64-linux-gnu/libcrypto.so.*       mr,
+  /usr/lib/x86_64-linux-gnu/libstdc++.so.*       mr,
+  /usr/lib/x86_64-linux-gnu/libgcc_s.so.*        mr,
+  /usr/lib/x86_64-linux-gnu/libc.so.*            mr,
+  /usr/lib/x86_64-linux-gnu/libm.so.*            mr,
+  /usr/lib/x86_64-linux-gnu/libboost_system.so.* mr,
+  /usr/lib/x86_64-linux-gnu/libboost_thread.so.* mr,
+  /usr/lib/x86_64-linux-gnu/libboost_atomic.so.* mr,
+  /usr/lib/x86_64-linux-gnu/libsodium.so.*       mr,
+  /usr/lib/x86_64-linux-gnu/libyaml-cpp.so.*     mr,
+  /usr/lib/x86_64-linux-gnu/libz.so.*            mr,
+  /usr/lib/x86_64-linux-gnu/libzstd.so.*         mr,
+
+  # Allow /etc/hosts and DNS resolution
+  /etc/hosts r,
+  /etc/resolv.conf r,
+
+  # Allow logging
+  /dev/log w,
+
+  # cache
+  /etc/ld.so.cache r,
+
+  /etc/ssl/openssl.cnf r,
+  unix (send) type=stream,
+
+  /usr/share/zoneinfo/** r,
+
+  signal (receive) peer=unconfined,
+}

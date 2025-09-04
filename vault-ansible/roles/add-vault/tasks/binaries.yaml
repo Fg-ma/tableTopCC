@@ -1,0 +1,21 @@
+- name: Check if Vault binary exists
+  stat:
+    path: "{{ vault_dir }}/bin/vault"
+  register: vault_bin
+
+- name: Copy Vault binary if not present
+  copy:
+    src: "{{ playbook_dir }}/../vault/vault"
+    dest: "{{ vault_dir }}/bin/vault"
+    owner: "{{ vault_agent_user }}"
+    group: "{{ vault_agent_bin_group }}"
+    mode: "0550"
+  when: not vault_bin.stat.exists
+
+- name: Copy vault_request binary
+  copy:
+    src: "/home/n1/Desktop/tableTopCC/tableTopVaultServer/server/build/vault_requests"
+    dest: "{{ vault_dir }}/bin/vault_requests"
+    owner: "{{ vault_agent_user }}"
+    group: "{{ vault_agent_bin_group }}"
+    mode: "0550"

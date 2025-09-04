@@ -1,0 +1,19 @@
+- name: Set vault apparmor profile name
+  set_fact:
+    vault_apparmor_profile_name: "{{ vault_dir | regex_replace('^/', '') | replace('/', '.') }}.bin.vault"
+
+- name: Set AppArmor profile to complain mode before removal
+  command: aa-complain {{ vault_apparmor_profile_name }}
+  become: true
+  ignore_errors: true
+
+- name: Remove vault AppArmor profile file
+  file:
+    path: "/etc/apparmor.d/{{ vault_apparmor_profile_name }}"
+    state: absent
+  become: true
+
+- name: Unload AppArmor profile from kernel
+  command: apparmor_parser -R /etc/apparmor.d/{{ vault_apparmor_profile_name }}
+  become: true
+  ignore_errors: true

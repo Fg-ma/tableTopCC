@@ -1,0 +1,7 @@
+path "auth/approle/role/mongo-config-10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}/role-id" {
+  capabilities = ["read"]
+}
+
+path "auth/approle/role/mongo-config-10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}/secret-id" {
+  capabilities = ["update"]
+}

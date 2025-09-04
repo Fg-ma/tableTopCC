@@ -1,0 +1,57 @@
+all:
+  hosts:
+    tabletopnode1:
+      ansible_host: 10.5.0.101
+    tabletopnode2:
+      ansible_host: 10.5.0.102
+    tabletopnode3:
+      ansible_host: 10.5.0.103
+
+  children:
+    config_servers:
+      hosts:
+        tabletopnode1:
+        tabletopnode2:
+        tabletopnode3:
+
+    new_config_servers:
+      hosts:
+        # tabletopnode1:
+        # tabletopnode2:
+        # tabletopnode3:
+
+    remove_config_servers:
+      hosts:
+        # tabletopnode1:
+        # tabletopnode2:
+        # tabletopnode3:
+
+    shard_servers:
+      hosts:
+        tabletopnode1:
+        tabletopnode2:
+        tabletopnode3:
+
+    new_shard_servers:
+      hosts:
+        # tabletopnode1:
+        # tabletopnode2:
+        # tabletopnode3:
+
+    remove_shard_servers:
+      hosts:
+        # tabletopnode1:
+        # tabletopnode2:
+        # tabletopnode3:
+
+    mongos_routers:
+      hosts:
+        tabletopnode1:
+        tabletopnode2:
+        tabletopnode3:
+
+    remove_mongos_routers:
+      hosts:
+        # tabletopnode1:
+        # tabletopnode2:
+        # tabletopnode3:

@@ -1,0 +1,7 @@
+path "auth/approle/login" {
+  capabilities = ["create"]
+}
+
+path "pki/issue/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}" {
+  capabilities = ["create", "update", "read", "list"]
+}

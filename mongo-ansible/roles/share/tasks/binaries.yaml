@@ -1,0 +1,35 @@
+- name: Check if MongoDB server binaries exist
+  stat:
+    path: "{{ mongo_base_dir }}/bin/{{ item.name }}"
+  loop:
+    - { name: "mongod" }
+    - { name: "mongos" }
+  register: server_binaries
+
+- name: Copy MongoDB server binaries if not present
+  copy:
+    src: "{{ playbook_dir }}/../system/bin/{{ item.item.name }}"
+    dest: "{{ mongo_base_dir }}/bin/{{ item.item.name }}"
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0550"
+  loop: "{{ server_binaries.results }}"
+  when: not item.stat.exists
+
+- name: Check if MongoDB shell binaries exist
+  stat:
+    path: "{{ mongo_base_dir }}/bin/{{ item.name }}"
+  loop:
+    - { name: "mongosh" }
+    - { name: "mongosh_crypt_v1.so" }
+  register: shell_binaries
+
+- name: Copy MongoDB shell binaries if not present
+  copy:
+    src: "{{ playbook_dir }}/../shell/bin/{{ item.item.name }}"
+    dest: "{{ mongo_base_dir }}/bin/{{ item.item.name }}"
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0550"
+  loop: "{{ shell_binaries.results }}"
+  when: not item.stat.exists

@@ -1,0 +1,45 @@
+- name: Include mkdirs tasks
+  import_tasks: mkdirs.yaml
+
+- name: Render mongos config file
+  template:
+    src: mongos.conf.j2
+    dest: "{{ mongo_base_dir }}/mongos/conf/mongos.conf"
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+    mode: "0440"
+
+- name: Create mongos systemd unit
+  copy:
+    dest: /etc/systemd/system/mongos.service
+    content: |
+      [Unit]
+      Description=MongoDB Shard Router
+      After=network.target mongos-vault-agent.service
+      Requires=mongos-vault-agent.service
+
+      [Service]
+      User={{ mongo_vault_agent_user }}
+      Group={{ mongo_vault_agent_group }}
+      ExecStart={{ mongo_base_dir }}/bin/mongos --config {{ mongo_base_dir }}/mongos/conf/mongos.conf
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Reload systemd and start mongos
+  systemd:
+    daemon_reload: true
+    name: mongos
+    enabled: true
+    state: started
+
+- name: Fix ownership of all MongoDB files
+  become: true
+  file:
+    path: "{{ mongo_base_dir }}/mongos"
+    recurse: yes
+    owner: "{{ mongo_vault_agent_user }}"
+    group: "{{ mongo_vault_agent_group }}"
+  notify:
+    - Reload systemd

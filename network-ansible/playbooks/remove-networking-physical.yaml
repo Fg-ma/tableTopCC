@@ -1,0 +1,9 @@
+- name: Remove physical machine networking
+  hosts: remove_physical
+  become: true
+  vars_files:
+    - ../vars/share.yaml
+    - ../vars/physical.yaml
+  roles:
+    - role: remove-nftables
+    - role: remove-networking-physical

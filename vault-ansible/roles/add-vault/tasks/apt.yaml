@@ -1,0 +1,21 @@
+- name: Ensure jq is installed
+  apt:
+    name: jq
+    state: present
+  become: true
+
+- name: Ensure vault_requests dependencies are installed
+  apt:
+    name:
+      - libboost-system1.83.0
+      - libboost-thread1.83.0
+      - libboost-atomic1.83.0
+      - libsodium23
+      - libssl3t64
+      - libyaml-cpp0.8
+      - libstdc++6
+      - zlib1g
+      - libzstd1
+      - curl
+    state: present
+  become: true

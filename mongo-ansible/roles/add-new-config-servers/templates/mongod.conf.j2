@@ -1,0 +1,30 @@
+storage:
+  dbPath: {{ mongo_base_dir }}/config/data
+
+systemLog:
+  destination: file
+  path: {{ mongo_base_dir }}/config/logs/mongod.log
+  logAppend: true
+
+net:
+  port: {{ config_port }}
+  bindIp: 10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}
+  tls:
+    mode: requireTLS
+    certificateKeyFile: {{ vault_dir }}/secrets/mongo/config/mongo-config-10.{{ mongo_config_subnet }}.0.{{ ansible_host.split('.')[-1] }}.pem
+    CAFile: {{ vault_dir }}/authorities/ca.pem
+    allowConnectionsWithoutCertificates: false
+    allowInvalidCertificates: false
+
+replication:
+  replSetName: "{{ config_repl_set_name }}"
+  
+sharding:
+  clusterRole: "{{ config_cluster_role }}"
+
+security:
+  authorization: enabled
+  clusterAuthMode: x509
+
+setParameter:
+  authenticationMechanisms: "SCRAM-SHA-256,MONGODB-X509"

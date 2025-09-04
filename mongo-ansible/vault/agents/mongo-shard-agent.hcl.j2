@@ -1,0 +1,29 @@
+pid_file = "{{ vault_dir }}/agents/mongo/shard-vault-agent.pid"
+
+vault {
+  address = "https://{{ vault_ip }}:{{ hashi_vault_port }}"
+  ca_cert = "{{ vault_dir }}/authorities/ca.pem"
+}
+
+auto_auth {
+  method "approle" {
+    config = {
+      role_id_file_path = "{{ vault_dir }}/secrets/mongo/shard/role_id"
+      secret_id_file_path = "{{ vault_dir }}/secrets/mongo/shard/secret_id"
+      remove_secret_id_file_after_reading = true
+    }
+  }
+  sink "file" {
+    config = {
+      path = "{{ vault_dir }}/secrets/mongo/shard/.vault-token"
+    }
+  }
+}
+
+template {
+  source      = "{{ vault_dir }}/templates/mongo/shard/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.pem.ctmpl"
+  destination = "{{ vault_dir }}/secrets/mongo/shard/mongo-shard-10.{{ mongo_shard_subnet }}.0.{{ ansible_host.split('.')[-1] }}.pem"
+  perms       = 0600
+  command     = "sudo {{ vault_dir }}/scripts/mongo/shard/mongo-shard-vault-restart.sh; exit 0"
+}
+
