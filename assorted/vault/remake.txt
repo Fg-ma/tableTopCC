@@ -1,0 +1,186 @@
+sudo nano ca.cnf
+[ req ]
+default_bits       = 4096
+distinguished_name = dn
+x509_extensions    = v3_ca
+prompt             = no
+
+[ dn ]
+C  = US
+ST = FL
+L  = CNTL
+O  = tableTopCA
+CN = TableTop Root CA
+
+[ v3_ca ]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical, CA:true
+keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+
+openssl genrsa -aes256 -out ca.key 4096
+
+openssl rand -base64 96 | tr -d '\n' | cut -c1-128
+sudo nano password.tmp
+
+sudo openssl req -new -x509 -days 3650 -key 
+ca.key -out ca.crt -config ca.cnf
+
+sudo cp ca.crt ca.pem
+
+sudo nano vault.cnf
+[ req ]
+default_bits       = 4096
+distinguished_name = DN
+req_extensions     = req_ext
+prompt             = no
+
+[ DN ]
+C  = US
+ST = FL       
+L  = CNTL
+O  = TableTop
+OU = vault
+CN = 10.5.0.100
+
+[ req_ext ]
+subjectAltName = @alt_names
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
+
+[ alt_names ]
+IP.1 = 10.5.0.100
+DNS.1 = n1.admin
+
+sudo openssl req -new -nodes \
+  -out vault.csr \
+  -keyout vault.key \
+  -config vault.cnf
+
+sudo openssl x509 -req \
+  -in vault.csr \
+  -CA /home/n1/Desktop/tableTopSecrets/ca.pem -CAkey /home/n1/Desktop/tableTopSecrets/ca.key -CAcreateserial \
+  -out vault.crt \
+  -extensions req_ext -extfile vault.cnf \
+  -days 365
+
+su -
+cd /opt/vault/tls
+sudo cp /home/n1/Desktop/tableTopNexus/assorted/tmp2/vault.crt ./
+sudo cp /home/n1/Desktop/tableTopNexus/assorted/tmp2/vault.key ./
+sudo chown vault:vault ./*
+ls -l
+
+vault kv put kv/vault/vault.crt content="$(< ./vault.crt)"
+vault kv put kv/vault/vault.cnf content="$(< ./vault.cnf)"
+vault kv put kv/vault/vault.key content="$(< ./vault.key)"
+vault kv put kv/vault/vault.csr content="$(< ./vault.csr)"
+
+vault kv put kv/tableTop/ca/ca.crt content="$(< ./ca.crt)"
+vault kv put kv/tableTop/ca/ca.cnf content="$(< ./ca.cnf)"
+vault kv put kv/tableTop/ca/ca.key content="$(< ./ca.key)"
+vault kv put kv/tableTop/ca/ca.csr content="$(< ./ca.csr)"
+vault kv put kv/tableTop/ca/ca.srl content="$(< ./ca.srl)"
+// Upload password via browser gui
+
+
+sudo nano table-top-vault-server.cnf
+[ req ]
+default_bits       = 4096
+distinguished_name = DN
+req_extensions     = req_ext
+prompt             = no
+
+[ DN ]
+C  = US
+ST = FL       
+L  = CNTL
+O  = TableTop
+OU = VaultServer
+CN = 10.5.0.100
+
+[ req_ext ]
+subjectAltName = @alt_names
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth, clientAuth
+
+[ alt_names ]
+IP.1 = 10.5.0.100
+DNS.1 = n1.admin
+
+sudo openssl req -new -nodes \
+  -out table-top-vault-server.csr \
+  -keyout table-top-vault-server.key \
+  -config table-top-vault-server.cnf
+
+sudo openssl x509 -req \
+  -in table-top-vault-server.csr \
+  -CA /home/n1/Desktop/tableTopSecrets/ca.pem -CAkey /home/n1/Desktop/tableTopSecrets/ca.key -CAcreateserial \
+  -out table-top-vault-server.crt \
+  -extensions req_ext -extfile table-top-vault-server.cnf \
+  -days 365
+
+openssl dhparam -out table-top-vault-server-dhparam-nginx.pem 4096
+
+sudo nano table-top-vault-server-nginx.cnf
+[ req ]
+default_bits       = 4096
+distinguished_name = DN
+req_extensions     = req_ext
+prompt             = no
+
+[ DN ]
+C  = US
+ST = FL       
+L  = CNTL
+O  = TableTop
+OU = VaultServerNginx
+CN = 10.5.0.100
+
+[ req_ext ]
+subjectAltName = @alt_names
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth, clientAuth
+
+[ alt_names ]
+IP.1 = 10.5.0.100
+DNS.1 = n1.admin
+
+sudo openssl req -new -nodes \
+  -out table-top-vault-server-nginx.csr \
+  -keyout table-top-vault-server-nginx.key \
+  -config table-top-vault-server-nginx.cnf
+
+sudo openssl x509 -req \
+  -in table-top-vault-server-nginx.csr \
+  -CA /home/n1/Desktop/tableTopSecrets/ca.pem -CAkey /home/n1/Desktop/tableTopSecrets/ca.key -CAcreateserial \
+  -out table-top-vault-server-nginx.crt \
+  -extensions req_ext -extfile table-top-vault-server-nginx.cnf \
+  -days 365
+
+openssl dhparam -out table-top-vault-server-dhparam-nginx.pem 4096
+
+vault kv put kv/vaultServer/table-top-vault-server.crt content="$(< ./table-top-vault-server.crt)"
+vault kv put kv/vaultServer/table-top-vault-server.cnf content="$(< ./table-top-vault-server.cnf)"
+vault kv put kv/vaultServer/table-top-vault-server.key content="$(< ./table-top-vault-server.key)"
+vault kv put kv/vaultServer/table-top-vault-server.csr content="$(< ./table-top-vault-server.csr)"
+vault kv put kv/vaultServer/table-top-vault-server-dhparam.pem content="$(< ./table-top-vault-server-dhparam.pem)"
+vault kv put kv/vaultServer/table-top-vault-server-nginx.crt content="$(< ./table-top-vault-server-nginx.crt)"
+vault kv put kv/vaultServer/table-top-vault-server-nginx.cnf content="$(< ./table-top-vault-server-nginx.cnf)"
+vault kv put kv/vaultServer/table-top-vault-server-nginx.key content="$(< ./table-top-vault-server-nginx.key)"
+vault kv put kv/vaultServer/table-top-vault-server-nginx.csr content="$(< ./table-top-vault-server-nginx.csr)"
+vault kv put kv/vaultServer/table-top-vault-server-dhparam-nginx.pem content="$(< ./table-top-vault-server-dhparam-nginx.pem)"
+
+// pki
+// Default lease 1 day
+// Max lease 1 day
+openssl rsa -in ca.key -out ca.key.decrypted
+cat ca.key.decrypted ca.crt > tmp-bundle.pem
+shred -u ca.key.decrypted tmp-bundle.pem
+
+// userpass
+User: adminvaultserver
+Password: password
+Policies: admin-vault-server-access,vault-server-access
+
+// todo policies

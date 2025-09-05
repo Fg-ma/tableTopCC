@@ -226,6 +226,110 @@ Routes::Routes(uWS::SSLApp& app) {
     res->end(buffer.str());
   });
 
+  app.get("/vault/*", [](auto* res, auto* req) {
+    if (!ServerUtils::instance().checkInternal(req)) {
+      res->writeStatus("403 Forbidden")->end();
+      return;
+    }
+
+    if (!ServerUtils::instance().checkOrigin(req)) {
+      res->writeStatus("401 Unauthorized")->end();
+      return;
+    }
+
+    std::string rawUrl(req->getUrl());
+
+    // Redirect "/vault" or "/vault/" to index
+    if (rawUrl == "/vault" || rawUrl == "/vault/") {
+      rawUrl = "/vault/public/vault.html";
+    }
+
+    std::string subPath = rawUrl.substr(std::string("/vault/").length());
+    auto safePathOpt = Sanitize::instance().sanitizePath(ROOT_DIR + "/client/dist/vault", subPath);
+    if (!safePathOpt) {
+      res->writeStatus("400 Bad Request")->end("Invalid or unsafe path");
+      return;
+    }
+    std::string safePath = *safePathOpt;
+
+    std::ifstream file(safePath, std::ios::binary);
+
+    if (!file) {
+      res->writeStatus("404 Not Found")->end("File not found");
+      return;
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+
+    if (ServerUtils::instance().endsWith(safePath, ".css")) {
+      res->writeHeader("Content-Type", "text/css");
+    } else if (ServerUtils::instance().endsWith(safePath, ".js") ||
+               ServerUtils::instance().endsWith(safePath, ".ts")) {
+      res->writeHeader("Content-Type", "application/javascript");
+    } else if (ServerUtils::instance().endsWith(safePath, ".html")) {
+      res->writeHeader("Content-Type", "text/html");
+    } else if (ServerUtils::instance().endsWith(safePath, ".json")) {
+      res->writeHeader("Content-Type", "application/json");
+    } else {
+      res->writeHeader("Content-Type", "text/plain");
+    }
+
+    res->end(buffer.str());
+  });
+
+  app.get("/mongo/*", [](auto* res, auto* req) {
+    if (!ServerUtils::instance().checkInternal(req)) {
+      res->writeStatus("403 Forbidden")->end();
+      return;
+    }
+
+    if (!ServerUtils::instance().checkOrigin(req)) {
+      res->writeStatus("401 Unauthorized")->end();
+      return;
+    }
+
+    std::string rawUrl(req->getUrl());
+
+    // Redirect "/mongo" or "/mongo/" to index
+    if (rawUrl == "/mongo" || rawUrl == "/mongo/") {
+      rawUrl = "/mongo/public/mongo.html";
+    }
+
+    std::string subPath = rawUrl.substr(std::string("/mongo/").length());
+    auto safePathOpt = Sanitize::instance().sanitizePath(ROOT_DIR + "/client/dist/mongo", subPath);
+    if (!safePathOpt) {
+      res->writeStatus("400 Bad Request")->end("Invalid or unsafe path");
+      return;
+    }
+    std::string safePath = *safePathOpt;
+
+    std::ifstream file(safePath, std::ios::binary);
+
+    if (!file) {
+      res->writeStatus("404 Not Found")->end("File not found");
+      return;
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+
+    if (ServerUtils::instance().endsWith(safePath, ".css")) {
+      res->writeHeader("Content-Type", "text/css");
+    } else if (ServerUtils::instance().endsWith(safePath, ".js") ||
+               ServerUtils::instance().endsWith(safePath, ".ts")) {
+      res->writeHeader("Content-Type", "application/javascript");
+    } else if (ServerUtils::instance().endsWith(safePath, ".html")) {
+      res->writeHeader("Content-Type", "text/html");
+    } else if (ServerUtils::instance().endsWith(safePath, ".json")) {
+      res->writeHeader("Content-Type", "application/json");
+    } else {
+      res->writeHeader("Content-Type", "text/plain");
+    }
+
+    res->end(buffer.str());
+  });
+
   app.post("/login", [](auto* res, auto* req) {
     if (!ServerUtils::instance().checkInternal(req)) {
       res->writeStatus("403 Forbidden")->end();

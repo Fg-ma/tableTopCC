@@ -1,7 +1,7 @@
 import React from "react";
-import { PendingRequestType } from "../../serverRequests/lib/typeConstant";
-import PrettyJSON from "../../prettyJSON/PrettyJSON";
-import ServerRequests from "../../serverRequests/ServerRequests";
+import { PendingRequestType } from "../../../../components/serverRequests/lib/typeConstant";
+import PrettyJSON from "../../../../components/prettyJSON/PrettyJSON";
+import ServerRequests from "../../../../components/serverRequests/ServerRequests";
 
 export default function RequestItem({
   request,

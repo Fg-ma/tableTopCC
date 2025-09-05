@@ -1,8 +1,8 @@
 import { useRef } from "react";
 import NavigationPanel from "../../components/navigationPanel/NavigationPanel";
 import VaultRequestsPanel from "./vaultRequestsPanel/VaultRequestsPanel";
-import ServerRequests from "./serverRequests/ServerRequests";
-import { PendingRequestType } from "./serverRequests/lib/typeConstant";
+import ServerRequests from "../../components/serverRequests/ServerRequests";
+import { PendingRequestType } from "../../components/serverRequests/lib/typeConstant";
 import "./css/scrollbar.css";
 
 export default function Main() {

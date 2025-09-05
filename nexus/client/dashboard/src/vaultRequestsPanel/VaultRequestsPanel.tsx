@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import ServerRequests from "../serverRequests/ServerRequests";
-import { PendingRequestType } from "../serverRequests/lib/typeConstant";
-import PrettyJSON from "../prettyJSON/PrettyJSON";
+import ServerRequests from "../../../components/serverRequests/ServerRequests";
+import { PendingRequestType } from "../../../components/serverRequests/lib/typeConstant";
 import SortRequestsDrop from "./lib/SortRequestsDrop";
 import RequestItem from "./lib/RequestItem";
 import { sortRequestsMap, SortRequestsTypes } from "./lib/typeConstant";
