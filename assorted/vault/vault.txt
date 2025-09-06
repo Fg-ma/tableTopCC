@@ -21,6 +21,9 @@ vault policy write policy policy.hcl
 # Create policy token
 vault token create -policy="policy" -ttl="24h"
 
+# Delete all entities
+vault list -format=json identity/entity/id | jq -r '.[]' | xargs -I {} vault delete identity/entity/id/{}
+
 // Remake certs
 sudo openssl req -new -nodes \
   -out .csr \

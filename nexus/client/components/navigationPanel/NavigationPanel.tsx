@@ -19,23 +19,23 @@ export default function NavigationPanel({
   return (
     <aside
       ref={navigationPanelRef}
-      className="navigation-panel relative flex h-full w-60 flex-col justify-start bg-fg-white p-4 text-fg-tone-black-1 transition-transform"
+      className="navigation-panel relative flex h-full flex-col justify-start bg-fg-white p-4 text-fg-tone-black-1 transition-transform"
     >
       <button
-        className="navigation-panel-toggle-tab absolute left-full top-4 hidden h-10 w-8 cursor-pointer rounded-r-lg border-none bg-fg-white text-3xl text-fg-tone-black-1"
+        className="navigation-panel-toggle-tab absolute left-full top-4 h-10 w-8 cursor-pointer rounded-r-lg border-none bg-fg-white text-3xl text-fg-tone-black-1"
         onClick={toggleNavigationPanel}
       >
         <img
-          className="block h-6 w-6 object-contain"
+          className="h-6 w-6 object-contain"
           src="/public/svgs/navigateForward.svg"
           alt="Open side bar"
         />
       </button>
       <div className="mb-8 flex items-center justify-between">
         <div className="flex items-center justify-center space-x-2">
-          <div className="h-10 w-10">
+          <div className="aspect-square h-10">
             <img
-              className="block h-full w-full object-contain"
+              className="h-full w-full object-contain"
               src="/public/svgs/tableTopNexusIcon.svg"
               alt="The nexus logo"
             />
@@ -45,11 +45,11 @@ export default function NavigationPanel({
           </h1>
         </div>
         <button
-          className="navigation-panel-toggle h-5 w-5 cursor-pointer border-none bg-transparent text-fg-tone-black-1"
+          className="navigation-panel-toggle aspect-square h-5 cursor-pointer border-none bg-transparent text-fg-tone-black-1"
           onClick={toggleNavigationPanel}
         >
           <img
-            className="block h-full w-full object-contain"
+            className="h-full w-full object-contain"
             src="/public/svgs/closeIcon.svg"
             alt="Close side bar"
           />

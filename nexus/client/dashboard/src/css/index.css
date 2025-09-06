@@ -1,4 +1,8 @@
 /* --- Navigation Panel Styles --- */
+.navigation-panel {
+  width: 15rem;
+}
+
 .navigation-panel.collapsed {
   width: 60px;
   padding: 0.5rem;
@@ -18,10 +22,8 @@
 }
 
 .navigation-panel-nav ul li a {
-  @apply text-fg-tone-black-1;
+  @apply font-Josefin text-xl text-fg-tone-black-1 transition-all hover:text-2xl;
   text-decoration: none;
-  font-size: 1.25rem;
-  transition: opacity 0.2s ease;
 }
 .navigation-panel-nav ul li a:hover {
   opacity: 0.8;
@@ -31,6 +33,10 @@
 .navigation-panel.collapsed .navigation-panel-nav,
 .navigation-panel.collapsed .logout-btn,
 .navigation-panel.collapsed .navigation-panel-toggle {
+  display: none;
+}
+
+.navigation-panel-toggle-tab {
   display: none;
 }
 

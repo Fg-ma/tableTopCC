@@ -1,5 +1,11 @@
 export default {
-  content: ["./loginPage/**/*.{js,jsx,ts,tsx,html}","./dashboard/**/*.{js,jsx,ts,tsx,html}"],
+  content: [
+    "./loginPage/**/*.{js,jsx,ts,tsx,html}",
+    "./dashboard/**/*.{js,jsx,ts,tsx,html}",
+    "./mongo/**/*.{js,jsx,ts,tsx,html}",
+    "./vault/**/*.{js,jsx,ts,tsx,html}",
+    "./components/**/*.{js,jsx,ts,tsx,html}",
+  ],
   theme: {
     extend: {
       colors: {

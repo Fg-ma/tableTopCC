@@ -1,0 +1,50 @@
+# --- Basic paths & names (override with -e or vars_files) ---
+work_dir: /home/n1/Desktop/tableTopNexus/assorted/tmp
+secrets_dir: /home/n1/Desktop/tableTopSecrets
+vault_tls_dir: /opt/vault/tls
+
+# Admin userpass password (override via -e or prompt)
+admin_user_password: "password"
+
+# File ownerships
+tls_owner: vault
+tls_group: vault
+local_owner: n1
+local_group: n1
+
+# Default generated files
+ca_cnffile: "{{ work_dir }}/ca.cnf"
+ca_keyfile: "{{ work_dir }}/ca.key"
+ca_certfile: "{{ work_dir }}/ca.crt"
+ca_pemfile: "{{ work_dir }}/ca.pem"
+ca_passfile: "{{ work_dir }}/password.tmp"
+ca_serial: "{{ work_dir }}/ca.srl"
+
+vault_cnffile: "{{ work_dir }}/vault.cnf"
+vault_csr: "{{ work_dir }}/vault.csr"
+vault_key: "{{ work_dir }}/vault.key"
+vault_crt: "{{ work_dir }}/vault.crt"
+
+server_cnffile: "{{ work_dir }}/table-top-vault-server.cnf"
+server_csr: "{{ work_dir }}/table-top-vault-server.csr"
+server_key: "{{ work_dir }}/table-top-vault-server.key"
+server_crt: "{{ work_dir }}/table-top-vault-server.crt"
+server_dhparam: "{{ work_dir }}/table-top-vault-server-dhparam.pem"
+
+nginx_cnffile: "{{ work_dir }}/table-top-vault-server-nginx.cnf"
+nginx_csr: "{{ work_dir }}/table-top-vault-server-nginx.csr"
+nginx_key: "{{ work_dir }}/table-top-vault-server-nginx.key"
+nginx_crt: "{{ work_dir }}/table-top-vault-server-nginx.crt"
+nginx_dhparam: "{{ work_dir }}/table-top-vault-server-dhparam-nginx.pem"
+
+tmp_bundle: "{{ work_dir }}/tmp-bundle.pem"
+ca_key_decrypted: "{{ work_dir }}/ca.key.decrypted"
+
+# CN / IP settings - change as needed
+vault_ip: "10.5.0.100"
+vault_dns: "n1.admin"
+
+# Vault KV base paths
+kv_base_vault: "kv/vault"
+kv_base_tabletop_ca: "kv/tableTop/ca"
+kv_base_vaultServer: "kv/vaultServer"

@@ -1,0 +1,365 @@
+- name: Ensure working directory exists
+  file:
+    path: "{{ work_dir }}"
+    state: directory
+    mode: "0750"
+    owner: "{{ local_owner }}"
+    group: "{{ local_group }}"
+
+- name: Ensure secrets dir exists
+  file:
+    path: "{{ secrets_dir }}"
+    state: directory
+    mode: "0750"
+    owner: "{{ local_owner }}"
+    group: "{{ local_group }}"
+
+- name: Ensure vault tls dir exists
+  file:
+    path: "{{ vault_tls_dir }}"
+    state: directory
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Write CA openssl config (ca.cnf)
+  template:
+    src: ca.cnf.j2
+    dest: "{{ ca_cnffile }}"
+    owner: "{{ local_owner }}"
+    group: "{{ local_group }}"
+    mode: "0640"
+
+- name: Check if CA passfile exists
+  stat:
+    path: "{{ ca_passfile }}"
+  register: ca_passfile_stat
+
+- name: Generate CA password if not present
+  shell: "openssl rand -base64 96 | tr -d '\\n' | cut -c1-128"
+  register: ca_password_gen
+  when: not ca_passfile_stat.stat.exists
+  changed_when: ca_password_gen.stdout != ""
+  no_log: true
+
+- name: Write CA password file when generated
+  copy:
+    dest: "{{ ca_passfile }}"
+    content: "{{ ca_password_gen.stdout }}\n"
+    owner: "{{ local_owner }}"
+    group: "{{ local_group }}"
+    mode: "0600"
+  when: not ca_passfile_stat.stat.exists
+
+- name: Read CA password from file
+  slurp:
+    src: "{{ ca_passfile }}"
+  register: ca_password_slurp
+  no_log: true
+
+- name: Set CA password fact
+  set_fact:
+    ca_password: "{{ (ca_password_slurp.content | b64decode).strip() }}"
+  no_log: true
+
+- name: Generate CA key (encrypted) if not exists
+  command: >
+    openssl genrsa -aes256 -passout pass:{{ ca_password | quote }} -out {{ ca_keyfile }} 4096
+  args:
+    creates: "{{ ca_keyfile }}"
+  register: gen_ca_key
+  no_log: true
+
+- name: Generate CA certificate if not exists
+  command: >
+    openssl req -new -x509 -days 3650 -key {{ ca_keyfile }}
+    -out {{ ca_certfile }} -config {{ ca_cnffile }} -passin pass:{{ ca_password | quote }}
+  args:
+    creates: "{{ ca_certfile }}"
+  register: gen_ca_crt
+  no_log: true
+
+- name: Copy CA certificate to PEM (ca.pem)
+  copy:
+    src: "{{ ca_certfile }}"
+    dest: "{{ ca_pemfile }}"
+    owner: "{{ local_owner }}"
+    group: "{{ local_group }}"
+    mode: "0644"
+  when: ca_certfile is defined
+
+- name: Write vault.cnf
+  template:
+    src: "vault.cnf.j2"
+    dest: "{{ vault_cnffile }}"
+    owner: "{{ local_owner }}"
+    group: "{{ local_group }}"
+    mode: "0640"
+
+- name: Generate vault key and CSR (if not exists)
+  command: >
+    openssl req -new -nodes -out {{ vault_csr }} -keyout {{ vault_key }}
+    -config {{ vault_cnffile }}
+  args:
+    creates: "{{ vault_csr }}"
+  register: gen_vault_csr
+  no_log: true
+
+- name: Sign vault CSR with CA (create vault.crt) if not exists
+  command: >
+    openssl x509 -req -in {{ vault_csr }}
+    -CA {{ ca_pemfile }} -CAkey {{ ca_keyfile }} -CAcreateserial
+    -out {{ vault_crt }}
+    -extensions req_ext -extfile {{ vault_cnffile }}
+    -days 365 -passin pass:{{ ca_password | quote }}
+  args:
+    creates: "{{ vault_crt }}"
+  register: sign_vault_crt
+  no_log: true
+
+- name: Copy Vault cert/key/csr/cnf to vault tls dir
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ vault_tls_dir }}/{{ item.dest }}"
+    owner: "{{ tls_owner }}"
+    group: "{{ tls_group }}"
+    mode: "{{ item.mode | default('0640') }}"
+  loop:
+    - { src: "{{ vault_crt }}", dest: "vault.crt", mode: "0644" }
+    - { src: "{{ vault_key }}", dest: "vault.key", mode: "0600" }
+    - { src: "{{ vault_csr }}", dest: "vault.csr", mode: "0644" }
+    - { src: "{{ vault_cnffile }}", dest: "vault.cnf", mode: "0640" }
+
+- name: List files in vault tls dir (debug)
+  command: ls -l {{ vault_tls_dir }}
+  register: ls_vault_tls
+- debug:
+    var: ls_vault_tls.stdout_lines
+
+- name: Upload files into Vault KV (vault CLI)
+  shell: >
+    vault kv put {{ item.kvpath }} content="$(< {{ item.local }})"
+  loop:
+    - {
+        kvpath: "{{ kv_base_vault }}/vault.crt",
+        local: "{{ vault_tls_dir }}/vault.crt",
+      }
+    - {
+        kvpath: "{{ kv_base_vault }}/vault.cnf",
+        local: "{{ vault_tls_dir }}/vault.cnf",
+      }
+    - {
+        kvpath: "{{ kv_base_vault }}/vault.key",
+        local: "{{ vault_tls_dir }}/vault.key",
+      }
+    - {
+        kvpath: "{{ kv_base_vault }}/vault.csr",
+        local: "{{ vault_tls_dir }}/vault.csr",
+      }
+  register: vault_kv_puts
+  changed_when: "'Success' in vault_kv_puts.stdout or vault_kv_puts.rc == 0"
+
+- name: Upload CA artifacts to Vault KV
+  shell: >
+    vault kv put {{ kv_base_tabletop_ca }}/ca.{{ item.suffix }} content="$(< {{ item.local }})"
+  loop:
+    - { suffix: "crt", local: "{{ ca_certfile }}" }
+    - { suffix: "cnf", local: "{{ ca_cnffile }}" }
+    - { suffix: "key", local: "{{ ca_keyfile }}" }
+    - { suffix: "csr", local: "{{ ca_keyfile }}.csr" }
+    - { suffix: "srl", local: "{{ ca_serial }}" }
+  register: vault_ca_puts
+  ignore_errors: true
+
+- name: Upload CA password into Vault KV
+  shell: >
+    vault kv put {{ kv_base_tabletop_ca }}/password password="$(< {{ ca_passfile }})"
+  register: vault_ca_pass_put
+  no_log: true
+  changed_when: vault_ca_pass_put.rc == 0
+
+- name: Write table-top-vault-server.cnf
+  template:
+    src: "table-top-vault-server.cnf.j2"
+    dest: "{{ server_cnffile }}"
+    owner: "{{ local_owner }}"
+    group: "{{ local_group }}"
+    mode: "0640"
+
+- name: Generate table-top-vault-server key and CSR
+  command: >
+    openssl req -new -nodes -out {{ server_csr }} -keyout {{ server_key }}
+    -config {{ server_cnffile }}
+  args:
+    creates: "{{ server_csr }}"
+  register: gen_server_csr
+  no_log: true
+
+- name: Sign table-top-vault-server CSR with CA
+  command: >
+    openssl x509 -req -in {{ server_csr }}
+    -CA {{ ca_pemfile }} -CAkey {{ ca_keyfile }} -CAcreateserial
+    -out {{ server_crt }}
+    -extensions req_ext -extfile {{ server_cnffile }}
+    -days 365 -passin pass:{{ ca_password | quote }}
+  args:
+    creates: "{{ server_crt }}"
+  register: sign_server_crt
+  no_log: true
+
+- name: Generate DH params for server (if not exists)
+  command: openssl dhparam -out {{ server_dhparam }} 4096
+  args:
+    creates: "{{ server_dhparam }}"
+  register: gen_server_dh
+  no_log: true
+
+- name: Write table-top-vault-server-nginx.cnf
+  template:
+    src: "table-top-vault-server-nginx.cnf.j2"
+    dest: "{{ nginx_cnffile }}"
+    owner: "{{ local_owner }}"
+    group: "{{ local_group }}"
+    mode: "0640"
+
+- name: Generate nginx key and CSR
+  command: >
+    openssl req -new -nodes -out {{ nginx_csr }} -keyout {{ nginx_key }}
+    -config {{ nginx_cnffile }}
+  args:
+    creates: "{{ nginx_csr }}"
+  register: gen_nginx_csr
+  no_log: true
+
+- name: Sign nginx CSR with CA
+  command: >
+    openssl x509 -req -in {{ nginx_csr }}
+    -CA {{ ca_pemfile }} -CAkey {{ ca_keyfile }} -CAcreateserial
+    -out {{ nginx_crt }}
+    -extensions req_ext -extfile {{ nginx_cnffile }}
+    -days 365 -passin pass:{{ ca_password | quote }}
+  args:
+    creates: "{{ nginx_crt }}"
+  register: sign_nginx_crt
+  no_log: true
+
+- name: Generate DH params for nginx (if not exists)
+  command: openssl dhparam -out {{ nginx_dhparam }} 4096
+  args:
+    creates: "{{ nginx_dhparam }}"
+  register: gen_nginx_dh
+  no_log: true
+
+- name: Ensure ownership of generated files is local_user (so they can be uploaded)
+  file:
+    path: "{{ work_dir }}"
+    state: directory
+    recurse: yes
+    owner: "{{ local_owner }}"
+    group: "{{ local_group }}"
+
+- name: Upload server certs / keys to Vault KV
+  shell: >
+    vault kv put {{ kv_base_vaultServer }}/{{ item.kv }} content="$(< {{ item.local }})"
+  loop:
+    - { kv: "table-top-vault-server.crt", local: "{{ server_crt }}" }
+    - { kv: "table-top-vault-server.cnf", local: "{{ server_cnffile }}" }
+    - { kv: "table-top-vault-server.key", local: "{{ server_key }}" }
+    - { kv: "table-top-vault-server.csr", local: "{{ server_csr }}" }
+    - {
+        kv: "table-top-vault-server-dhparam.pem",
+        local: "{{ server_dhparam }}",
+      }
+    - { kv: "table-top-vault-server-nginx.crt", local: "{{ nginx_crt }}" }
+    - { kv: "table-top-vault-server-nginx.cnf", local: "{{ nginx_cnffile }}" }
+    - { kv: "table-top-vault-server-nginx.key", local: "{{ nginx_key }}" }
+    - { kv: "table-top-vault-server-nginx.csr", local: "{{ nginx_csr }}" }
+    - {
+        kv: "table-top-vault-server-dhparam-nginx.pem",
+        local: "{{ nginx_dhparam }}",
+      }
+  register: vault_server_puts
+  changed_when: "'Success' in vault_server_puts.stdout or vault_server_puts.rc == 0"
+
+- name: Decrypt CA key temporarily to create bundle
+  command: >
+    openssl rsa -in {{ ca_keyfile }} -out {{ ca_key_decrypted }} -passin pass:{{ ca_password | quote }}
+  args:
+    creates: "{{ ca_key_decrypted }}"
+  register: decrypt_ca_key
+  no_log: true
+  ignore_errors: true
+
+- name: Create tmp bundle from decrypted key + ca cert
+  shell: cat {{ ca_key_decrypted }} {{ ca_certfile }} > {{ tmp_bundle }}
+  args:
+    creates: "{{ tmp_bundle }}"
+  when: decrypt_ca_key is succeeded
+  no_log: true
+
+- name: Securely remove decrypted key and tmp bundle (shred if available, else rm)
+  block:
+    - name: Check for shred binary
+      stat:
+        path: /usr/bin/shred
+      register: shred_stat
+
+    - name: Securely delete files using shred
+      command: shred -u {{ item }}
+      loop:
+        - "{{ ca_key_decrypted }}"
+        - "{{ tmp_bundle }}"
+      when: shred_stat.stat.exists
+      no_log: true
+
+    - name: Fallback delete files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ ca_key_decrypted }}"
+        - "{{ tmp_bundle }}"
+      when: not shred_stat.stat.exists
+  when: decrypt_ca_key is succeeded
+
+- name: Write admin-vault-server-access policy file
+  template:
+    src: "admin-vault-server-access.hcl.j2"
+    dest: "{{ work_dir }}/admin-vault-server-access.hcl"
+    owner: "{{ local_owner }}"
+    group: "{{ local_group }}"
+    mode: "0640"
+
+- name: Upload admin-vault-server-access policy to Vault
+  shell: vault policy write admin-vault-server-access {{ work_dir }}/admin-vault-server-access.hcl
+
+- name: Write vault-server-access policy file
+  template:
+    src: "vault-server-access.hcl.j2"
+    dest: "{{ work_dir }}/vault-server-access.hcl"
+    owner: "{{ local_owner }}"
+    group: "{{ local_group }}"
+    mode: "0640"
+
+- name: Upload vault-server-access policy to Vault
+  shell: vault policy write vault-server-access {{ work_dir }}/vault-server-access.hcl
+
+- name: Write mongo-ansible-access policy file
+  template:
+    src: "mongo-ansible-access.hcl.j2"
+    dest: "{{ work_dir }}/mongo-ansible-access.hcl"
+    owner: "{{ local_owner }}"
+    group: "{{ local_group }}"
+    mode: "0640"
+
+- name: Upload mongo-ansible-access policy to Vault
+  shell: vault policy write mongo-ansible-access {{ work_dir }}/mongo-ansible-access.hcl
+
+- name: Ensure userpass auth backend is mounted (if not, skip if exists)
+  shell: vault auth enable userpass || true
+
+- name: Create adminvaultserver userpass user
+  shell: >
+    vault write auth/userpass/users/adminvaultserver password={{ admin_user_password | quote }}
+    policies="admin-vault-server-access,vault-server-access"
+  no_log: true

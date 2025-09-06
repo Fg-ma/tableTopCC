@@ -1,3 +1,4 @@
+// Create ca config
 sudo nano ca.cnf
 [ req ]
 default_bits       = 4096
@@ -18,16 +19,20 @@ authorityKeyIdentifier = keyid:always,issuer
 basicConstraints = critical, CA:true
 keyUsage = critical, digitalSignature, cRLSign, keyCertSign
 
+// Create ca key
 openssl genrsa -aes256 -out ca.key 4096
 
+// Create ca password
 openssl rand -base64 96 | tr -d '\n' | cut -c1-128
 sudo nano password.tmp
 
-sudo openssl req -new -x509 -days 3650 -key 
-ca.key -out ca.crt -config ca.cnf
+// Create ca certificate
+sudo openssl req -new -x509 -days 3650 -key ca.key -out ca.crt -config ca.cnf
 
+// Make ca pem certificate copy
 sudo cp ca.crt ca.pem
 
+// Make hashi tls certs
 sudo nano vault.cnf
 [ req ]
 default_bits       = 4096
@@ -64,13 +69,16 @@ sudo openssl x509 -req \
   -extensions req_ext -extfile vault.cnf \
   -days 365
 
+// Place hashi vault certifcates in the correct spots
 su -
 cd /opt/vault/tls
+// Copy from whatever tmp folder they were made in
 sudo cp /home/n1/Desktop/tableTopNexus/assorted/tmp2/vault.crt ./
 sudo cp /home/n1/Desktop/tableTopNexus/assorted/tmp2/vault.key ./
 sudo chown vault:vault ./*
 ls -l
 
+// Upload copies to vault for safe keeping
 vault kv put kv/vault/vault.crt content="$(< ./vault.crt)"
 vault kv put kv/vault/vault.cnf content="$(< ./vault.cnf)"
 vault kv put kv/vault/vault.key content="$(< ./vault.key)"
@@ -81,9 +89,9 @@ vault kv put kv/tableTop/ca/ca.cnf content="$(< ./ca.cnf)"
 vault kv put kv/tableTop/ca/ca.key content="$(< ./ca.key)"
 vault kv put kv/tableTop/ca/ca.csr content="$(< ./ca.csr)"
 vault kv put kv/tableTop/ca/ca.srl content="$(< ./ca.srl)"
-// Upload password via browser gui
+vault kv put kv/tableTop/ca/password password="$(< ./password.tmp)"
 
-
+// Create vault server certs
 sudo nano table-top-vault-server.cnf
 [ req ]
 default_bits       = 4096
@@ -120,7 +128,7 @@ sudo openssl x509 -req \
   -extensions req_ext -extfile table-top-vault-server.cnf \
   -days 365
 
-openssl dhparam -out table-top-vault-server-dhparam-nginx.pem 4096
+openssl dhparam -out table-top-vault-server-dhparam.pem 4096
 
 sudo nano table-top-vault-server-nginx.cnf
 [ req ]
@@ -160,6 +168,10 @@ sudo openssl x509 -req \
 
 openssl dhparam -out table-top-vault-server-dhparam-nginx.pem 4096
 
+// Make sure ownership is such that they can be uploaded to vault
+sudo chown n1:n1 ./*
+
+// Upload certs to vault
 vault kv put kv/vaultServer/table-top-vault-server.crt content="$(< ./table-top-vault-server.crt)"
 vault kv put kv/vaultServer/table-top-vault-server.cnf content="$(< ./table-top-vault-server.cnf)"
 vault kv put kv/vaultServer/table-top-vault-server.key content="$(< ./table-top-vault-server.key)"
@@ -171,16 +183,152 @@ vault kv put kv/vaultServer/table-top-vault-server-nginx.key content="$(< ./tabl
 vault kv put kv/vaultServer/table-top-vault-server-nginx.csr content="$(< ./table-top-vault-server-nginx.csr)"
 vault kv put kv/vaultServer/table-top-vault-server-dhparam-nginx.pem content="$(< ./table-top-vault-server-dhparam-nginx.pem)"
 
-// pki
+// Create pki
 // Default lease 1 day
 // Max lease 1 day
+// Decrypt ca key so it can be stored in pki issuer without error
 openssl rsa -in ca.key -out ca.key.decrypted
 cat ca.key.decrypted ca.crt > tmp-bundle.pem
 shred -u ca.key.decrypted tmp-bundle.pem
 
-// userpass
+// Policies
+sudo nano admin-vault-server-access
+path "kv/data/vaultServer/nginx-internal-token" {
+  capabilities = ["read"]
+}
+
+path "kv/data/vaultServer/table-top-vault-server.key" {
+  capabilities = ["read"]
+}
+
+path "kv/data/vaultServer/table-top-vault-server-nginx.key" {
+  capabilities = ["read"]
+}
+
+path "kv/data/vaultServer/table-top-vault-server.crt" {
+  capabilities = ["read"]
+}
+
+path "kv/data/vaultServer/table-top-vault-server-nginx.crt" {
+  capabilities = ["read"]
+}
+
+path "kv/data/vaultServer/table-top-vault-server-dhparam.pem" {
+  capabilities = ["read"]
+}
+
+path "kv/data/vaultServer/table-top-vault-server-dhparam-nginx.pem" {
+  capabilities = ["read"]
+}
+
+path "kv/data/tableTop/ca.pem" {
+  capabilities = ["read"]
+}
+
+vault policy write admin-vault-server-access admin-vault-server-access.hcl
+
+sudo nano vault-server-access
+# Allow validating own token
+path "auth/token/lookup-self" {
+  capabilities = ["read"]
+}
+
+# Allow minting tokens with arbitrary policies
+path "auth/token/create" {
+  capabilities = ["create", "update", "sudo"]
+}
+
+# Allow reading AppRole role IDs for mongo-* roles
+path "auth/approle/role/mongo-*/role-id" {
+  capabilities = ["read"]
+}
+
+# Allow generating secret IDs
+path "auth/approle/role/mongo-*/secret-id" {
+  capabilities = ["update"]
+}
+
+vault policy write vault-server-access vault-server-access.hcl
+
+sudo nano mongo-ansible-access
+path "sys/policies/acl/*" {
+  capabilities = ["create", "update", "read", "delete", "list"]
+}
+
+path "auth/approle/role/*" {
+  capabilities = ["create", "read", "update", "delete", "list"]
+}
+
+path "kv/data/mongo/admin" {
+  capabilities = ["read"]
+}
+
+path "kv/data/tableTop/ca/ca.pem" {
+  capabilities = ["read"]
+}
+
+path "kv/data/tableTop/ca/ca.key" {
+  capabilities = ["read"]
+}
+
+path "kv/data/mongo/" {
+  capabilities = ["list"]
+}
+
+path "kv/data/mongo/*" {
+  capabilities = ["create", "update", "delete", "list"]
+}
+
+path "kv/metadata/mongo/*" {
+  capabilities = ["delete", "list"]
+}
+
+path "kv/data/mongos/" {
+  capabilities = ["list"]
+}
+
+path "kv/data/mongos/*" {
+  capabilities = ["create", "update", "delete", "list"]
+}
+
+path "kv/metadata/mongos/*" {
+  capabilities = ["delete", "list"]
+}
+
+# PKI Engine Access
+path "pki/roles/*" {
+  capabilities = ["create", "update", "read", "list"]
+}
+path "pki/issue/*" {
+  capabilities = ["create", "update", "read", "list"]
+}
+path "pki/sign/*" {
+  capabilities = ["create", "update"]
+}
+path "pki/revoke" {
+  capabilities = ["update"]
+}
+path "pki/certs/*" {
+  capabilities = ["read", "list"]
+}
+path "pki/issuers" {
+  capabilities = ["read", "list"]
+}
+path "pki/keys/*" {
+  capabilities = ["read", "list"]
+}
+
+path "pki/config/*" {
+  capabilities = ["read", "update"]
+}
+
+path "roles/*" {
+  capabilities = ["create", "update", "read", "list"]
+}
+
+vault policy write mongo-ansible-access mongo-ansible-access.hcl
+
+// Create userpass
 User: adminvaultserver
 Password: password
 Policies: admin-vault-server-access,vault-server-access
-
-// todo policies

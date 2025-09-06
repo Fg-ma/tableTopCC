@@ -1,0 +1,7 @@
+- name: Remake hashi vault
+  hosts: vault_nodes
+  become: true
+  vars_files:
+    - ../vars/vault.yaml
+  roles:
+    - role: remake-vault

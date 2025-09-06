@@ -1,0 +1,17 @@
+# Allow validating own token
+path "auth/token/lookup-self" {
+  capabilities = ["read"]
+}
+
+# Allow minting tokens with arbitrary policies
+path "auth/token/create" {
+  capabilities = ["create", "update", "sudo"]
+}
+
+# AppRole role read/secret-id generation
+path "auth/approle/role/mongo-*/role-id" {
+  capabilities = ["read"]
+}
+path "auth/approle/role/mongo-*/secret-id" {
+  capabilities = ["update"]
+}
